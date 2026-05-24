@@ -35,12 +35,17 @@ oauth.register(
 )
 
 
-def require_user(request: Request):
-    user = request.session.get("user")
-    if not user:
-        raise HTTPException(status_code=401, detail="Please login with Google")
-    return user
+#def require_user(request: Request):
+#    user = request.session.get("user")
+#    if not user:
+#        raise HTTPException(status_code=401, detail="Please login with Google")
+#    return user
 
+def require_user(request: Request):
+    return {
+        "email": "dev@local",
+        "name": "Developer"
+    }
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
