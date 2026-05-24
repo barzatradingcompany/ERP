@@ -1,0 +1,10 @@
+.erp-table { width: 100%; }
+.erp-table table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.erp-table th, .erp-table td { border-bottom: 1px solid #E5E7EB; padding: 10px; text-align: left; white-space: nowrap; }
+.erp-table thead th { position: sticky; top: 0; background: #FFFFFF; z-index: 5; cursor: pointer; }
+.erp-table .wrap { overflow: auto; max-height: 460px; }
+.erp-table .controls { display: flex; justify-content: space-between; gap: 8px; padding: 8px; border-bottom: 1px solid #E5E7EB; }
+.erp-table .pager { display: flex; align-items: center; gap: 8px; padding: 8px; }
+.erp-table button { border: 1px solid #E5E7EB; background: #fff; border-radius: 6px; padding: 4px 8px; font-size: 12px; }
+.nav-item.active { background: #DBEAFE; color: #1D4ED8; }
+.day-entry { border-top: 1px solid #E5E7EB; padding-top: 8px; margin-top: 8px; }

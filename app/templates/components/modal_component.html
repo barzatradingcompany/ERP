@@ -1,0 +1,9 @@
+<div id="{{ modal_id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+  <div class="w-full max-w-3xl rounded-md border border-[#E5E7EB] bg-white p-4 shadow-xl">
+    <div class="mb-3 flex items-center justify-between">
+      <h3 class="text-base font-semibold text-[#111827]">{{ title }}</h3>
+      <button type="button" data-close-modal="{{ modal_id }}" class="rounded-md border border-[#E5E7EB] px-3 py-1 text-sm text-[#111827]">Close</button>
+    </div>
+    {{ body | safe }}
+  </div>
+</div>

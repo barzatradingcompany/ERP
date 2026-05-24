@@ -3,166 +3,165 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ERP Desk</title>
-  <link rel="stylesheet" href="/static/css/desk.css" />
+  <title>Mattress ERP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2563EB',
+            bg: '#F5F6F8',
+            card: '#FFFFFF',
+            ink: '#111827',
+            line: '#E5E7EB',
+            success: '#10B981',
+            warning: '#F59E0B',
+            danger: '#EF4444'
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/static/css/app.css" />
 </head>
-<body>
-  <div class="desk-layout">
-    <aside class="sidebar">
-      <div class="brand">ERP Desk</div>
-      <nav class="nav">
-        <button class="nav-item" data-panel="dashboard">Dashboard</button>
-        <button class="nav-item" data-panel="customers">Customers</button>
-        <button class="nav-item" data-panel="suppliers">Suppliers</button>
-        <button class="nav-item active" data-panel="products">Products</button>
-        <button class="nav-item" data-panel="purchases">Purchases</button>
-        <button class="nav-item" data-panel="sales">Sales</button>
-        <button class="nav-item" data-panel="inventory">Inventory</button>
-        <button class="nav-item" data-panel="daybook">Daybook</button>
-      </nav>
-    </aside>
+<body class="bg-bg text-ink">
+  <div class="flex min-h-screen">
+    {% include 'components/sidebar.html' %}
+    <div class="flex min-w-0 flex-1 flex-col">
+      {% include 'components/navbar.html' %}
+      <main class="p-4 lg:p-6">
+        <section id="dashboard" class="panel space-y-4">
+          <h1 class="text-xl font-semibold">Dashboard</h1>
+          {% include 'components/dashboard_cards.html' %}
+        </section>
 
-    <main class="main">
-      <header class="topbar">
-        <input id="globalSearch" class="search" placeholder="Search modules..." />
-        <div class="user-pill">{{ user.name }} | {{ user.email }}</div>
-      </header>
+        <section id="customers" class="panel hidden space-y-4">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-xl font-semibold">Customers</h2>
+            <div class="flex gap-2">
+              <input id="customerSearch" class="rounded-md border border-line bg-white px-3 py-2 text-sm" placeholder="Search" />
+              <button id="openCustomerModal" class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">+ Add Customer</button>
+            </div>
+          </div>
+          {% set table_id='customersTable' %}{% include 'components/table_component.html' %}
+        </section>
 
-      <section id="dashboard" class="panel">
-        <h2>Dashboard</h2>
-        <div id="kpiGrid" class="kpi-grid"></div>
-      </section>
+        <section id="suppliers" class="panel hidden space-y-4">
+          <div class="flex items-center justify-between"><h2 class="text-xl font-semibold">Suppliers</h2></div>
+          <form id="supplierForm" class="grid grid-cols-1 gap-2 md:grid-cols-2">
+            <input name="name" class="rounded-md border border-line px-3 py-2" placeholder="Supplier Name" required />
+            <input name="phone" class="rounded-md border border-line px-3 py-2" placeholder="Phone" />
+            <input name="address" class="rounded-md border border-line px-3 py-2 md:col-span-2" placeholder="Address" />
+            <button class="w-fit rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">Add Supplier</button>
+          </form>
+          {% set table_id='suppliersTable' %}{% include 'components/table_component.html' %}
+        </section>
 
-      <section id="customers" class="panel">
-        <h2>Customers</h2>
-        <div class="toolbar">
-          <button id="openCustomerModal" type="button">+ Add Customer</button>
-          <input id="customerSearch" placeholder="Search" />
-        </div>
-        <div id="customersTable" class="table-wrap"></div>
-      </section>
+        <section id="products" class="panel hidden space-y-4">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-xl font-semibold">Products</h2>
+            <div class="flex gap-2">
+              <input id="productSearch" class="rounded-md border border-line bg-white px-3 py-2 text-sm" placeholder="Search" />
+              <button id="openProductModal" class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">+ Add Product</button>
+            </div>
+          </div>
+          {% set table_id='productsTable' %}{% include 'components/table_component.html' %}
+        </section>
 
-      <section id="suppliers" class="panel">
-        <h2>Suppliers</h2>
-        <form id="supplierForm" class="form-grid">
-          <input name="name" placeholder="Supplier Name" required />
-          <input name="phone" placeholder="Phone" />
-          <input name="address" placeholder="Address" />
-          <button type="submit">Add Supplier</button>
-        </form>
-        <div id="suppliersTable" class="table-wrap"></div>
-      </section>
+        <section id="purchases" class="panel hidden space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold">Purchases</h2>
+            <button id="openPurchaseModal" class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">New Purchase</button>
+          </div>
+          {% set table_id='purchasesTable' %}{% include 'components/table_component.html' %}
+        </section>
 
-      <section id="products" class="panel active">
-        <h2>Products</h2>
-        <div class="toolbar">
-          <button id="openProductModal" type="button">+ Add Product</button>
-          <input id="productSearch" placeholder="Search" />
-        </div>
-        <div id="productsTable" class="table-wrap"></div>
-      </section>
+        <section id="sales" class="panel hidden space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold">Sales</h2>
+            <button id="openSaleModal" class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">New Sale</button>
+          </div>
+          {% set table_id='salesTable' %}{% include 'components/table_component.html' %}
+        </section>
 
-      <section id="purchases" class="panel">
-        <h2>Purchases</h2>
-        <div class="toolbar">
-          <button id="openPurchaseModal" type="button">New Purchase</button>
-        </div>
-        <div id="purchasesTable" class="table-wrap"></div>
-      </section>
+        <section id="inventory" class="panel hidden space-y-4">
+          <h2 class="text-xl font-semibold">Inventory</h2>
+          <div id="inventorySummary" class="grid grid-cols-1 gap-3 md:grid-cols-3"></div>
+          <div id="lowStockWarnings" class="space-y-2"></div>
+          {% set table_id='inventoryTable' %}{% include 'components/table_component.html' %}
+        </section>
 
-      <section id="sales" class="panel">
-        <h2>Sales</h2>
-        <div class="toolbar">
-          <button id="openSaleModal" type="button">New Sale</button>
-        </div>
-        <div id="salesTable" class="table-wrap"></div>
-      </section>
+        <section id="daybook" class="panel hidden space-y-4">
+          <h2 class="text-xl font-semibold">Daybook</h2>
+          <div id="daybookTable" class="space-y-3"></div>
+        </section>
 
-      <section id="inventory" class="panel">
-        <h2>Inventory</h2>
-        <div id="inventorySummary" class="mini-cards"></div>
-        <div id="lowStockWarnings" class="warn-wrap"></div>
-        <div id="inventoryTable" class="table-wrap"></div>
-      </section>
+        <section id="vouchers" class="panel hidden space-y-4">
+          <h2 class="text-xl font-semibold">Vouchers</h2>
+          <div class="rounded-md border border-line bg-card p-4 text-sm text-gray-600">Voucher screens can be added here.</div>
+        </section>
 
-      <section id="daybook" class="panel">
-        <h2>Daybook</h2>
-        <div id="daybookTable" class="table-wrap"></div>
-      </section>
-
-      <div id="toast" class="toast"></div>
-    </main>
-  </div>
-
-  <div id="productModal" class="modal hidden">
-    <div class="modal-card">
-      <h3 id="productModalTitle">Add Product</h3>
-      <form id="productForm" class="form-grid two-col">
-        <input name="name" placeholder="Product Name" required />
-        <input name="category" placeholder="Category" required />
-        <input name="size" placeholder="Size" required />
-        <input name="thickness" placeholder="Thickness" required />
-        <input name="purchase_cost" type="number" step="0.01" placeholder="Purchase Price" required />
-        <input name="selling_price" type="number" step="0.01" placeholder="Selling Price" required />
-        <input name="stock_qty" type="number" placeholder="Stock Quantity" value="0" required />
-        <button type="submit">Save</button>
-      </form>
-      <button id="closeProductModal" class="ghost" type="button">Close</button>
+        <section id="settings" class="panel hidden space-y-4">
+          <h2 class="text-xl font-semibold">Settings</h2>
+          <div class="rounded-md border border-line bg-card p-4 text-sm text-gray-600">Settings screens can be added here.</div>
+        </section>
+      </main>
     </div>
   </div>
 
-  <div id="customerModal" class="modal hidden">
-    <div class="modal-card">
-      <h3>Add Customer</h3>
-      <form id="customerForm" class="form-grid">
-        <input name="store_name" placeholder="Store Name" required />
-        <select name="customer_type" required>
-          <option value="retail">Retail</option>
-          <option value="wholesale">Wholesale</option>
-        </select>
-        <input name="phone" placeholder="Phone" />
-        <input name="address" placeholder="Address" />
-        <button type="submit">Save</button>
-      </form>
-      <button id="closeCustomerModal" class="ghost" type="button">Close</button>
-    </div>
-  </div>
+  {% set modal_id='productModal' %}{% set title='Product' %}
+  {% set body %}
+  <form id="productForm" class="grid grid-cols-1 gap-2 md:grid-cols-2">
+    <input name="name" class="rounded-md border border-line px-3 py-2" placeholder="Product Name" required />
+    <input name="category" class="rounded-md border border-line px-3 py-2" placeholder="Category" required />
+    <input name="size" class="rounded-md border border-line px-3 py-2" placeholder="Size" required />
+    <input name="thickness" class="rounded-md border border-line px-3 py-2" placeholder="Thickness" required />
+    <input name="purchase_cost" type="number" step="0.01" class="rounded-md border border-line px-3 py-2" placeholder="Purchase Price" required />
+    <input name="selling_price" type="number" step="0.01" class="rounded-md border border-line px-3 py-2" placeholder="Selling Price" required />
+    <input name="stock_qty" type="number" value="0" class="rounded-md border border-line px-3 py-2" placeholder="Stock Quantity" required />
+    <button class="w-fit rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">Save</button>
+  </form>
+  {% endset %}{% include 'components/modal_component.html' %}
 
-  <div id="purchaseModal" class="modal hidden">
-    <div class="modal-card">
-      <h3>New Purchase</h3>
-      <form id="purchaseForm" class="form-grid two-col">
-        <select name="supplier_id" id="purchaseSupplier" required></select>
-        <input name="purchase_date" type="date" id="purchaseDate" required />
-        <select name="product_id" id="purchaseProduct" required></select>
-        <input name="quantity" type="number" placeholder="Qty" required />
-        <input name="unit_cost" type="number" step="0.01" placeholder="Cost" required />
-        <button type="submit">Save</button>
-      </form>
-      <button id="closePurchaseModal" class="ghost" type="button">Close</button>
-    </div>
-  </div>
+  {% set modal_id='customerModal' %}{% set title='Customer' %}
+  {% set body %}
+  <form id="customerForm" class="grid grid-cols-1 gap-2 md:grid-cols-2">
+    <input name="store_name" class="rounded-md border border-line px-3 py-2" placeholder="Store Name" required />
+    <select name="customer_type" class="rounded-md border border-line px-3 py-2" required><option value="retail">Retail</option><option value="wholesale">Wholesale</option></select>
+    <input name="phone" class="rounded-md border border-line px-3 py-2" placeholder="Phone" />
+    <input name="address" class="rounded-md border border-line px-3 py-2" placeholder="Address" />
+    <button class="w-fit rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">Save</button>
+  </form>
+  {% endset %}{% include 'components/modal_component.html' %}
 
-  <div id="saleModal" class="modal hidden">
-    <div class="modal-card">
-      <h3>New Sale</h3>
-      <form id="saleForm" class="form-grid two-col">
-        <select name="customer_id" id="saleCustomer" required></select>
-        <select name="payment_type" required>
-          <option value="full">Full</option>
-          <option value="advance">Advance</option>
-          <option value="credit" selected>Credit</option>
-        </select>
-        <input name="sale_date" id="saleDate" type="date" required />
-        <input name="paid_amount" type="number" step="0.01" value="0" placeholder="Paid Now" />
-        <select name="product_id" id="saleProduct" required></select>
-        <input name="quantity" type="number" placeholder="Qty" required />
-        <input name="unit_price" type="number" step="0.01" placeholder="Price" required />
-        <button type="submit">Save</button>
-      </form>
-      <button id="closeSaleModal" class="ghost" type="button">Close</button>
-    </div>
-  </div>
+  {% set modal_id='purchaseModal' %}{% set title='New Purchase' %}
+  {% set body %}
+  <form id="purchaseForm" class="grid grid-cols-1 gap-2 md:grid-cols-2">
+    <select name="supplier_id" id="purchaseSupplier" class="rounded-md border border-line px-3 py-2" required></select>
+    <input name="purchase_date" id="purchaseDate" type="date" class="rounded-md border border-line px-3 py-2" required />
+    <select name="product_id" id="purchaseProduct" class="rounded-md border border-line px-3 py-2" required></select>
+    <input name="quantity" type="number" class="rounded-md border border-line px-3 py-2" placeholder="Qty" required />
+    <input name="unit_cost" type="number" step="0.01" class="rounded-md border border-line px-3 py-2" placeholder="Cost" required />
+    <button class="w-fit rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">Save</button>
+  </form>
+  {% endset %}{% include 'components/modal_component.html' %}
+
+  {% set modal_id='saleModal' %}{% set title='New Sale' %}
+  {% set body %}
+  <form id="saleForm" class="grid grid-cols-1 gap-2 md:grid-cols-2">
+    <select name="customer_id" id="saleCustomer" class="rounded-md border border-line px-3 py-2" required></select>
+    <select name="payment_type" class="rounded-md border border-line px-3 py-2" required><option value="full">Full</option><option value="advance">Advance</option><option value="credit" selected>Credit</option></select>
+    <input name="sale_date" id="saleDate" type="date" class="rounded-md border border-line px-3 py-2" required />
+    <input name="paid_amount" type="number" step="0.01" value="0" class="rounded-md border border-line px-3 py-2" placeholder="Paid Now" />
+    <select name="product_id" id="saleProduct" class="rounded-md border border-line px-3 py-2" required></select>
+    <input name="quantity" type="number" class="rounded-md border border-line px-3 py-2" placeholder="Qty" required />
+    <input name="unit_price" type="number" step="0.01" class="rounded-md border border-line px-3 py-2" placeholder="Price" required />
+    <button class="w-fit rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">Save</button>
+  </form>
+  {% endset %}{% include 'components/modal_component.html' %}
+
+  {% include 'components/toast_component.html' %}
 
   <script src="/static/js/desk.js"></script>
 </body>
