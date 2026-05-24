@@ -1,6 +1,7 @@
 const $ = (q) => document.querySelector(q);
 const locale = 'en-IN';
-const money = (n) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n || 0));
+const getCurrency = () => localStorage.getItem('erp_currency') || 'INR';
+const money = (n) => new Intl.NumberFormat(locale, { style: 'currency', currency: getCurrency(), maximumFractionDigits: 0 }).format(Number(n || 0));
 let lowStockItems = [];
 
 function toast(message) {
@@ -14,6 +15,43 @@ async function api(path) {
   const res = await fetch(path, { headers: { 'Content-Type': 'application/json' } });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
+}
+
+function applyTheme() {
+  const dark = localStorage.getItem('erp_theme') === 'dark';
+  const body = document.body;
+  if (dark) {
+    body.classList.add('dark');
+    body.classList.remove('bg-bg', 'text-ink');
+    body.style.backgroundColor = '#111827';
+    body.style.color = '#F9FAFB';
+  } else {
+    body.classList.remove('dark');
+    body.classList.add('bg-bg', 'text-ink');
+    body.style.backgroundColor = '';
+    body.style.color = '';
+  }
+}
+
+function bindNavigation() {
+  const items = document.querySelectorAll('.nav-item[data-panel]');
+  const panels = document.querySelectorAll('.panel');
+  const setPanel = (name) => {
+    items.forEach((i) => {
+      const active = i.dataset.panel === name;
+      i.classList.toggle('active', active);
+      if (active) {
+        i.classList.add('border-[#2563EB]', 'bg-[#DBEAFE]', 'font-bold', 'text-[#1D4ED8]');
+        i.classList.remove('border-transparent', 'text-[#111827]');
+      } else {
+        i.classList.remove('border-[#2563EB]', 'bg-[#DBEAFE]', 'font-bold', 'text-[#1D4ED8]');
+        i.classList.add('border-transparent', 'text-[#111827]');
+      }
+    });
+    panels.forEach((p) => p.classList.toggle('hidden', p.id !== name));
+  };
+  items.forEach((i) => i.addEventListener('click', () => setPanel(i.dataset.panel)));
+  setPanel('dashboard');
 }
 
 function renderSimpleTable(containerId, columns, rows) {
@@ -86,3 +124,26 @@ $('#closeLowStockList')?.addEventListener('click', () => {
   $('#lowStockModal')?.classList.add('hidden');
   $('#lowStockModal')?.classList.remove('flex');
 });
+
+$('#darkThemeToggle')?.addEventListener('change', (e) => {
+  localStorage.setItem('erp_theme', e.target.checked ? 'dark' : 'light');
+  applyTheme();
+});
+
+$('#currencySelect')?.addEventListener('change', async (e) => {
+  localStorage.setItem('erp_currency', e.target.value);
+  await loadDashboard();
+});
+
+function initSettings() {
+  const dark = localStorage.getItem('erp_theme') === 'dark';
+  const darkToggle = $('#darkThemeToggle');
+  if (darkToggle) darkToggle.checked = dark;
+  const currency = getCurrency();
+  const currencySelect = $('#currencySelect');
+  if (currencySelect) currencySelect.value = currency;
+}
+
+applyTheme();
+bindNavigation();
+initSettings();
