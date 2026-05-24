@@ -21,6 +21,7 @@ class SupplierCreate(BaseModel):
 
 
 class ProductCreate(BaseModel):
+    parent_id: int | None = None
     name: str
     category: str = ""
     size: str = ""
@@ -32,6 +33,7 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
+    parent_id: int | None = None
     name: str
     category: str = ""
     size: str = ""

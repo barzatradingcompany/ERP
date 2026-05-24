@@ -1,8 +1,14 @@
 <header class="sticky top-0 z-20 border-b border-[#E5E7EB] bg-white">
   <div class="flex items-center justify-between gap-3 px-4 py-3 lg:px-6">
     <div class="flex w-full max-w-xl items-center gap-2">
-      <input id="globalSearch" class="w-full rounded-md border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#111827] outline-none focus:border-[#2563EB]" placeholder="Search modules..." />
+      <input id="globalSearch" class="h-11 w-full rounded-md border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#111827] outline-none transition-all duration-200 ease-in-out focus:border-[#2563EB]" placeholder="Search modules... (Ctrl+K)" />
     </div>
-    <div class="shrink-0 rounded-md border border-[#E5E7EB] px-3 py-2 text-sm text-[#111827]">{{ user.name }} | {{ user.email }}</div>
+    <div class="flex items-center gap-3">
+      <img src="{{ user.picture or 'https://ui-avatars.com/api/?name=' ~ user.name }}" class="h-9 w-9 rounded-full border border-[#E5E7EB]" alt="profile" />
+      <div class="text-right">
+        <div class="text-sm font-semibold text-[#111827]">Barza Trading Co.</div>
+        <a href="/auth/logout" class="text-xs text-[#6B7280] hover:text-[#111827]">Logout</a>
+      </div>
+    </div>
   </div>
 </header>

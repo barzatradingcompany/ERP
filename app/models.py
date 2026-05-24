@@ -60,6 +60,7 @@ class Product(Base):
     __tablename__ = "products"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey("products.id"), nullable=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     category: Mapped[str] = mapped_column(String(100), default="")
     size: Mapped[str] = mapped_column(String(100), default="")

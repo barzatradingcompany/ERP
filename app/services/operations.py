@@ -71,6 +71,10 @@ def create_supplier(db: Session, payload: schemas.SupplierCreate):
 
 
 def create_product(db: Session, payload: schemas.ProductCreate):
+    if payload.parent_id is not None:
+        parent = db.get(models.Product, payload.parent_id)
+        if not parent:
+            raise HTTPException(status_code=404, detail="Parent product not found")
     p = models.Product(**payload.model_dump())
     db.add(p)
     db.commit()
@@ -269,6 +273,11 @@ def create_receipt_voucher(db: Session, payload: schemas.ReceiptVoucherCreate):
     rv = models.ReceiptVoucher(**payload.model_dump())
     db.add(rv)
     db.flush()
+    if payload.sale_id:
+        sale = db.get(models.Sale, payload.sale_id)
+        if sale:
+            sale.paid_amount += payload.amount
+            sale.due_amount = max(0.0, sale.total_amount - sale.paid_amount)
     customer.outstanding_balance = max(0.0, customer.outstanding_balance - payload.amount)
     add_daybook(
         db,

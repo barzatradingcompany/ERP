@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mattress ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -25,15 +28,31 @@
   </script>
   <link rel="stylesheet" href="/static/css/app.css" />
 </head>
-<body class="bg-bg text-ink">
+<body class="bg-bg text-ink" style="font-family: Inter, sans-serif;">
   <div class="flex min-h-screen">
     {% include 'components/sidebar.html' %}
     <div class="flex min-w-0 flex-1 flex-col">
       {% include 'components/navbar.html' %}
       <main class="p-4 lg:p-6">
         <section id="dashboard" class="panel space-y-4">
-          <h1 class="text-xl font-semibold">Dashboard</h1>
+          <h1 class="text-[28px] font-bold leading-tight">Dashboard</h1>
           {% include 'components/dashboard_cards.html' %}
+          <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            <div class="xl:col-span-2 rounded-xl border border-line bg-card p-4 shadow-sm">
+              <h3 class="mb-3 text-[20px] font-semibold">Recent Transactions</h3>
+              <div id="recentTransactions"></div>
+            </div>
+            <div class="rounded-xl border border-line bg-card p-4 shadow-sm">
+              <h3 class="mb-3 text-[20px] font-semibold">Quick Actions</h3>
+              <div class="grid grid-cols-1 gap-2">
+                <button data-quick="sale" class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">New Sale</button>
+                <button data-quick="product" class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">Add Product</button>
+                <button data-quick="customer" class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">Add Customer</button>
+                <button data-quick="purchase" class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">New Purchase</button>
+                <button data-quick="receipt" class="rounded-md border border-line bg-white px-3 py-2 text-sm font-medium text-ink">Receive Payment</button>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section id="customers" class="panel hidden space-y-4">
@@ -113,6 +132,7 @@
   {% set modal_id='productModal' %}{% set title='Product' %}
   {% set body %}
   <form id="productForm" class="grid grid-cols-1 gap-2 md:grid-cols-2">
+    <select id="productParent" name="parent_id" class="h-11 rounded-md border border-line px-3 py-2 md:col-span-2"><option value="">Parent Product (optional)</option></select>
     <input name="name" class="rounded-md border border-line px-3 py-2" placeholder="Product Name" required />
     <input name="category" class="rounded-md border border-line px-3 py-2" placeholder="Category" required />
     <input name="size" class="rounded-md border border-line px-3 py-2" placeholder="Size" required />
@@ -161,7 +181,26 @@
   </form>
   {% endset %}{% include 'components/modal_component.html' %}
 
+  {% set modal_id='receiptModal' %}{% set title='Receive Payment' %}
+  {% set body %}
+  <form id="receiptVoucherForm" class="grid grid-cols-1 gap-2 md:grid-cols-2">
+    <select name="customer_id" id="rvCustomerId" class="h-11 rounded-md border border-line px-3 py-2" required></select>
+    <input name="sale_id" id="rvSaleId" class="h-11 rounded-md border border-line px-3 py-2" placeholder="Invoice ID (optional)" />
+    <input name="amount" type="number" class="h-11 rounded-md border border-line px-3 py-2" placeholder="Amount" required />
+    <input name="notes" class="h-11 rounded-md border border-line px-3 py-2" placeholder="Notes" />
+    <button class="w-fit rounded-md bg-primary px-3 py-2 text-sm font-medium text-white">Save Receipt</button>
+  </form>
+  {% endset %}{% include 'components/modal_component.html' %}
+
   {% include 'components/toast_component.html' %}
+  <div id="commandPalette" class="fixed inset-0 z-[70] hidden items-start justify-center bg-black/30 pt-24">
+    <div class="w-full max-w-xl rounded-xl border border-line bg-white shadow-xl">
+      <div class="border-b border-line p-3">
+        <input id="commandInput" class="h-11 w-full rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-primary" placeholder="Type command..." />
+      </div>
+      <div id="commandList" class="max-h-80 overflow-auto p-2"></div>
+    </div>
+  </div>
 
   <script src="/static/js/desk.js"></script>
 </body>

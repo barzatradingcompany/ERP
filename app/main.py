@@ -26,8 +26,11 @@ def _ensure_products_category_column():
             cols = [row[1] for row in conn.execute(text("PRAGMA table_info(products)")).fetchall()]
             if "category" not in cols:
                 conn.execute(text("ALTER TABLE products ADD COLUMN category VARCHAR(100) DEFAULT ''"))
+            if "parent_id" not in cols:
+                conn.execute(text("ALTER TABLE products ADD COLUMN parent_id INTEGER"))
         else:
             conn.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT ''"))
+            conn.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS parent_id INTEGER NULL"))
 
 
 _ensure_products_category_column()
@@ -175,12 +178,54 @@ def delete_product(product_id: int, db: Session = Depends(get_db), _=Depends(req
     row = db.get(models.Product, product_id)
     if not row:
         raise HTTPException(status_code=404, detail="Product not found")
-    if row.stock_qty > 0:
-        raise HTTPException(status_code=400, detail="Cannot delete product with stock quantity > 0")
-    purchase_refs = db.execute(select(models.PurchaseItem.id).where(models.PurchaseItem.product_id == product_id)).first()
-    sale_refs = db.execute(select(models.SaleItem.id).where(models.SaleItem.product_id == product_id)).first()
-    if purchase_refs or sale_refs:
-        raise HTTPException(status_code=400, detail="Cannot delete product with transaction history")
+    db.query(models.SaleItem).filter(models.SaleItem.product_id == product_id).delete()
+    db.query(models.PurchaseItem).filter(models.PurchaseItem.product_id == product_id).delete()
+    db.query(models.SalesReturnItem).filter(models.SalesReturnItem.product_id == product_id).delete()
+    db.query(models.PurchaseReturnItem).filter(models.PurchaseReturnItem.product_id == product_id).delete()
+    db.query(models.Product).filter(models.Product.parent_id == product_id).update({models.Product.parent_id: None})
+    db.delete(row)
+    db.commit()
+    return {"ok": True}
+
+
+@app.delete("/customers/{customer_id}")
+def delete_customer(customer_id: int, db: Session = Depends(get_db), _=Depends(require_user)):
+    row = db.get(models.Customer, customer_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    sale_ids = [x[0] for x in db.execute(select(models.Sale.id).where(models.Sale.customer_id == customer_id)).all()]
+    if sale_ids:
+        db.query(models.SaleItem).filter(models.SaleItem.sale_id.in_(sale_ids)).delete(synchronize_session=False)
+        db.query(models.ReceiptVoucher).filter(models.ReceiptVoucher.sale_id.in_(sale_ids)).delete(synchronize_session=False)
+        db.query(models.Sale).filter(models.Sale.id.in_(sale_ids)).delete(synchronize_session=False)
+    db.query(models.ReceiptVoucher).filter(models.ReceiptVoucher.customer_id == customer_id).delete()
+    sr_ids = [x[0] for x in db.execute(select(models.SalesReturn.id).where(models.SalesReturn.customer_id == customer_id)).all()]
+    if sr_ids:
+        db.query(models.SalesReturnItem).filter(models.SalesReturnItem.sales_return_id.in_(sr_ids)).delete(
+            synchronize_session=False
+        )
+        db.query(models.SalesReturn).filter(models.SalesReturn.id.in_(sr_ids)).delete(synchronize_session=False)
+    db.delete(row)
+    db.commit()
+    return {"ok": True}
+
+
+@app.delete("/suppliers/{supplier_id}")
+def delete_supplier(supplier_id: int, db: Session = Depends(get_db), _=Depends(require_user)):
+    row = db.get(models.Supplier, supplier_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    purchase_ids = [x[0] for x in db.execute(select(models.Purchase.id).where(models.Purchase.supplier_id == supplier_id)).all()]
+    if purchase_ids:
+        db.query(models.PurchaseItem).filter(models.PurchaseItem.purchase_id.in_(purchase_ids)).delete(synchronize_session=False)
+        db.query(models.Purchase).filter(models.Purchase.id.in_(purchase_ids)).delete(synchronize_session=False)
+    db.query(models.PaymentVoucher).filter(models.PaymentVoucher.supplier_id == supplier_id).delete()
+    pr_ids = [x[0] for x in db.execute(select(models.PurchaseReturn.id).where(models.PurchaseReturn.supplier_id == supplier_id)).all()]
+    if pr_ids:
+        db.query(models.PurchaseReturnItem).filter(models.PurchaseReturnItem.purchase_return_id.in_(pr_ids)).delete(
+            synchronize_session=False
+        )
+        db.query(models.PurchaseReturn).filter(models.PurchaseReturn.id.in_(pr_ids)).delete(synchronize_session=False)
     db.delete(row)
     db.commit()
     return {"ok": True}
@@ -249,3 +294,26 @@ def daybook_feed(limit: int = 200, db: Session = Depends(get_db), _=Depends(requ
 @app.get("/dashboard")
 def dashboard(db: Session = Depends(get_db), _=Depends(require_user)):
     return operations.dashboard(db)
+
+
+@app.get("/transactions/recent")
+def recent_transactions(limit: int = 5, db: Session = Depends(get_db), _=Depends(require_user)):
+    rows = db.execute(select(models.DaybookEntry).order_by(models.DaybookEntry.created_at.desc()).limit(limit)).scalars().all()
+    data = []
+    for r in rows:
+        amount = r.cash_in if r.cash_in else (r.cash_out if r.cash_out else (r.sales_amount if r.sales_amount else r.purchase_amount))
+        customer = "-"
+        if r.ref_table == "sales":
+            sale = db.get(models.Sale, r.ref_id)
+            if sale:
+                c = db.get(models.Customer, sale.customer_id)
+                customer = c.store_name if c else "-"
+        data.append(
+            {
+                "type": r.event_type.value,
+                "customer": customer,
+                "amount": amount,
+                "date": r.created_at.isoformat(),
+            }
+        )
+    return data
