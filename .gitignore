@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.venv/
+erp_v1.db
+
+.env

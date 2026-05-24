@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ERP V1</title>
+  <style>
+    :root { --bg:#f3f6f9; --card:#ffffff; --text:#18222c; --muted:#657786; --accent:#0b6bcb; }
+    body { margin:0; font-family: 'Segoe UI', Tahoma, sans-serif; background: linear-gradient(135deg,#eef4fb,#f8fbff); color:var(--text); }
+    .wrap { max-width: 980px; margin: 40px auto; padding: 0 16px; }
+    .card { background:var(--card); border-radius:12px; box-shadow:0 10px 26px rgba(0,0,0,.08); padding:20px; }
+    .row { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+    .btn { background:var(--accent); color:#fff; border:0; padding:10px 14px; border-radius:8px; text-decoration:none; }
+    .muted { color:var(--muted); }
+    .grid { margin-top: 16px; display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
+    .kpi { background:#f7fbff; border:1px solid #dbe8f6; border-radius:10px; padding:12px; }
+    .v { font-size:1.25rem; font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="row">
+        <h2 style="margin:0">Mattress ERP V1</h2>
+        {% if user %}
+        <div class="row">
+          <span class="muted">{{ user.name }} ({{ user.email }})</span>
+          <a class="btn" href="/auth/logout">Logout</a>
+        </div>
+        {% else %}
+          <a class="btn" href="/auth/login">Login with Google</a>
+        {% endif %}
+      </div>
+
+      {% if user %}
+      <p class="muted">Live operational view</p>
+      <div id="kpis" class="grid"></div>
+      {% else %}
+      <p class="muted">Open website -> Google login -> use ERP.</p>
+      {% endif %}
+    </div>
+  </div>
+  {% if user %}
+  <script>
+    const labels = [
+      ["todays_sales", "Today's Sales"],
+      ["monthly_sales", "Monthly Sales"],
+      ["outstanding_customer_balances", "Customer Outstanding"],
+      ["stock_value", "Stock Value"],
+      ["cash_received_today", "Cash In Today"],
+      ["cash_paid_today", "Cash Out Today"],
+      ["low_stock_alerts", "Low Stock Alerts"],
+    ];
+    fetch('/dashboard').then(r=>r.json()).then(d=>{
+      const root = document.getElementById('kpis');
+      labels.forEach(([k,t])=>{
+        const div = document.createElement('div');
+        div.className='kpi';
+        const val = typeof d[k] === 'number' ? d[k].toLocaleString() : d[k];
+        div.innerHTML = `<div class="muted">${t}</div><div class="v">${val ?? 0}</div>`;
+        root.appendChild(div);
+      });
+    });
+  </script>
+  {% endif %}
+</body>
+</html>
