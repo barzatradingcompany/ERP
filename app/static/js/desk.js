@@ -3,6 +3,7 @@ const locale = 'en-IN';
 const getCurrency = () => localStorage.getItem('erp_currency') || 'INR';
 const money = (n) => new Intl.NumberFormat(locale, { style: 'currency', currency: getCurrency(), maximumFractionDigits: 0 }).format(Number(n || 0));
 let lowStockItems = [];
+const systemDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
 function toast(message) {
   const el = $('#appToast');
@@ -18,18 +19,17 @@ async function api(path) {
 }
 
 function applyTheme() {
-  const dark = localStorage.getItem('erp_theme') === 'dark';
+  // Backward compatibility for old boolean storage key.
+  if (!localStorage.getItem('erp_theme_mode') && localStorage.getItem('erp_theme')) {
+    localStorage.setItem('erp_theme_mode', localStorage.getItem('erp_theme'));
+  }
+  const mode = localStorage.getItem('erp_theme_mode') || 'light';
+  const dark = mode === 'dark' || (mode === 'system' && systemDarkQuery.matches);
   const body = document.body;
   if (dark) {
-    body.classList.add('dark');
-    body.classList.remove('bg-bg', 'text-ink');
-    body.style.backgroundColor = '#111827';
-    body.style.color = '#F9FAFB';
+    body.classList.add('dark-theme');
   } else {
-    body.classList.remove('dark');
-    body.classList.add('bg-bg', 'text-ink');
-    body.style.backgroundColor = '';
-    body.style.color = '';
+    body.classList.remove('dark-theme');
   }
 }
 
@@ -125,9 +125,10 @@ $('#closeLowStockList')?.addEventListener('click', () => {
   $('#lowStockModal')?.classList.remove('flex');
 });
 
-$('#darkThemeToggle')?.addEventListener('change', (e) => {
-  localStorage.setItem('erp_theme', e.target.checked ? 'dark' : 'light');
+$('#themeSelect')?.addEventListener('change', (e) => {
+  localStorage.setItem('erp_theme_mode', e.target.value);
   applyTheme();
+  loadDashboard().catch(() => {});
 });
 
 $('#currencySelect')?.addEventListener('change', async (e) => {
@@ -136,13 +137,23 @@ $('#currencySelect')?.addEventListener('change', async (e) => {
 });
 
 function initSettings() {
-  const dark = localStorage.getItem('erp_theme') === 'dark';
-  const darkToggle = $('#darkThemeToggle');
-  if (darkToggle) darkToggle.checked = dark;
+  if (!localStorage.getItem('erp_theme_mode') && localStorage.getItem('erp_theme')) {
+    localStorage.setItem('erp_theme_mode', localStorage.getItem('erp_theme'));
+  }
+  const themeMode = localStorage.getItem('erp_theme_mode') || 'light';
+  const themeSelect = $('#themeSelect');
+  if (themeSelect) themeSelect.value = themeMode;
   const currency = getCurrency();
   const currencySelect = $('#currencySelect');
   if (currencySelect) currencySelect.value = currency;
 }
+
+systemDarkQuery.addEventListener('change', () => {
+  if ((localStorage.getItem('erp_theme_mode') || 'light') === 'system') {
+    applyTheme();
+    loadDashboard().catch(() => {});
+  }
+});
 
 applyTheme();
 bindNavigation();

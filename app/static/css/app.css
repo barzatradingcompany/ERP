@@ -10,3 +10,82 @@
 .erp-table button { border: 1px solid #E5E7EB; background: #fff; border-radius: 6px; padding: 4px 8px; font-size: 12px; }
 .nav-item.active { background: #DBEAFE; color: #1D4ED8; border-left-color: #2563EB; font-weight: 700; }
 .day-entry { border-top: 1px solid #E5E7EB; padding-top: 8px; margin-top: 8px; }
+
+/* Real dark theme palette overrides */
+.dark-theme {
+  background: #0b1220 !important;
+  color: #e5e7eb !important;
+}
+
+.dark-theme .bg-bg,
+.dark-theme .bg-card,
+.dark-theme .bg-white {
+  background-color: #111827 !important;
+}
+
+.dark-theme .text-ink,
+.dark-theme h1,
+.dark-theme h2,
+.dark-theme h3,
+.dark-theme h4,
+.dark-theme h5,
+.dark-theme h6 {
+  color: #f9fafb !important;
+}
+
+.dark-theme .text-\[\#6B7280\],
+.dark-theme .text-gray-500,
+.dark-theme .text-gray-600,
+.dark-theme .text-gray-700 {
+  color: #9ca3af !important;
+}
+
+.dark-theme .border-line,
+.dark-theme .border,
+.dark-theme .border-\[\#E5E7EB\] {
+  border-color: #374151 !important;
+}
+
+.dark-theme aside,
+.dark-theme header {
+  background: #0f172a !important;
+}
+
+.dark-theme input,
+.dark-theme select,
+.dark-theme textarea {
+  background: #111827 !important;
+  color: #f9fafb !important;
+  border-color: #374151 !important;
+}
+
+.dark-theme .nav-item {
+  color: #e5e7eb !important;
+}
+
+.dark-theme .nav-item:hover {
+  background: #1f2937 !important;
+}
+
+.dark-theme .nav-item.active {
+  background: #1e3a8a !important;
+  color: #dbeafe !important;
+}
+
+.dark-theme .erp-table thead th {
+  background: #111827 !important;
+  color: #e5e7eb !important;
+}
+
+.dark-theme .erp-table th,
+.dark-theme .erp-table td {
+  border-bottom-color: #374151 !important;
+}
+
+.dark-theme .erp-table tbody tr:nth-child(even) {
+  background: #0f172a !important;
+}
+
+.dark-theme .erp-table tbody tr:hover {
+  background: #1f2937 !important;
+}
