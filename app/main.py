@@ -1,5 +1,4 @@
 import os
-from urllib.parse import quote_plus
 
 from authlib.integrations.starlette_client import OAuth
 from dotenv import load_dotenv
@@ -35,21 +34,16 @@ oauth.register(
 )
 
 
-#def require_user(request: Request):
-#    user = request.session.get("user")
-#    if not user:
-#        raise HTTPException(status_code=401, detail="Please login with Google")
-#    return user
-
 def require_user(request: Request):
-    return {
-        "email": "dev@local",
-        "name": "Developer"
-    }
+    user = request.session.get("user")
+    if not user:
+        raise HTTPException(status_code=401, detail="Please login with Google")
+    return user
+
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    user = request.session.get("user")
+    user = request.session.get("user") or require_user(request)
     return templates.TemplateResponse("index.html", {"request": request, "user": user})
 
 

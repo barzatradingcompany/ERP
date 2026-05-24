@@ -3,65 +3,121 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ERP V1</title>
-  <style>
-    :root { --bg:#f3f6f9; --card:#ffffff; --text:#18222c; --muted:#657786; --accent:#0b6bcb; }
-    body { margin:0; font-family: 'Segoe UI', Tahoma, sans-serif; background: linear-gradient(135deg,#eef4fb,#f8fbff); color:var(--text); }
-    .wrap { max-width: 980px; margin: 40px auto; padding: 0 16px; }
-    .card { background:var(--card); border-radius:12px; box-shadow:0 10px 26px rgba(0,0,0,.08); padding:20px; }
-    .row { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
-    .btn { background:var(--accent); color:#fff; border:0; padding:10px 14px; border-radius:8px; text-decoration:none; }
-    .muted { color:var(--muted); }
-    .grid { margin-top: 16px; display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
-    .kpi { background:#f7fbff; border:1px solid #dbe8f6; border-radius:10px; padding:12px; }
-    .v { font-size:1.25rem; font-weight:700; }
-  </style>
+  <title>ERP Desk</title>
+  <link rel="stylesheet" href="/static/css/desk.css" />
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <div class="row">
-        <h2 style="margin:0">Mattress ERP V1</h2>
-        {% if user %}
-        <div class="row">
-          <span class="muted">{{ user.name }} ({{ user.email }})</span>
-          <a class="btn" href="/auth/logout">Logout</a>
-        </div>
-        {% else %}
-          <a class="btn" href="/auth/login">Login with Google</a>
-        {% endif %}
-      </div>
+  <div class="desk-layout">
+    <aside class="sidebar">
+      <div class="brand">ERP Desk</div>
+      <nav class="nav">
+        <button class="nav-item active" data-panel="dashboard">Dashboard</button>
+        <button class="nav-item" data-panel="customers">Customers</button>
+        <button class="nav-item" data-panel="suppliers">Suppliers</button>
+        <button class="nav-item" data-panel="products">Products</button>
+        <button class="nav-item" data-panel="purchases">Purchases</button>
+        <button class="nav-item" data-panel="sales">Sales</button>
+        <button class="nav-item" data-panel="inventory">Inventory</button>
+        <button class="nav-item" data-panel="daybook">Daybook</button>
+      </nav>
+    </aside>
 
-      {% if user %}
-      <p class="muted">Live operational view</p>
-      <div id="kpis" class="grid"></div>
-      {% else %}
-      <p class="muted">Open website -> Google login -> use ERP.</p>
-      {% endif %}
-    </div>
+    <main class="main">
+      <header class="topbar">
+        <input id="globalSearch" class="search" placeholder="Search modules..." />
+        <div class="user-pill">{{ user.name }} | {{ user.email }}</div>
+      </header>
+
+      <section id="dashboard" class="panel active">
+        <h2>Dashboard</h2>
+        <div id="kpiGrid" class="kpi-grid"></div>
+      </section>
+
+      <section id="customers" class="panel">
+        <h2>Customers</h2>
+        <form id="customerForm" class="form-grid">
+          <select name="customer_type" required>
+            <option value="retail">Retail</option>
+            <option value="wholesale">Wholesale</option>
+          </select>
+          <input name="store_name" placeholder="Store Name" required />
+          <input name="phone" placeholder="Phone" />
+          <input name="address" placeholder="Address" />
+          <button type="submit">Add Customer</button>
+        </form>
+        <div id="customersTable" class="table-wrap"></div>
+      </section>
+
+      <section id="suppliers" class="panel">
+        <h2>Suppliers</h2>
+        <form id="supplierForm" class="form-grid">
+          <input name="name" placeholder="Supplier Name" required />
+          <input name="phone" placeholder="Phone" />
+          <input name="address" placeholder="Address" />
+          <button type="submit">Add Supplier</button>
+        </form>
+        <div id="suppliersTable" class="table-wrap"></div>
+      </section>
+
+      <section id="products" class="panel">
+        <h2>Products</h2>
+        <form id="productForm" class="form-grid two-col">
+          <input name="name" placeholder="Mattress Name" required />
+          <input name="size" placeholder="Size" required />
+          <input name="thickness" placeholder="Thickness" required />
+          <input name="purchase_cost" type="number" step="0.01" placeholder="Purchase Cost" required />
+          <input name="selling_price" type="number" step="0.01" placeholder="Selling Price" required />
+          <input name="low_stock_limit" type="number" value="5" placeholder="Low Stock Limit" />
+          <button type="submit">Add Product</button>
+        </form>
+        <div id="productsTable" class="table-wrap"></div>
+      </section>
+
+      <section id="purchases" class="panel">
+        <h2>Purchases</h2>
+        <form id="purchaseForm" class="form-grid two-col">
+          <input name="supplier_id" type="number" placeholder="Supplier ID" required />
+          <input name="product_id" type="number" placeholder="Product ID" required />
+          <input name="quantity" type="number" placeholder="Quantity" required />
+          <input name="unit_cost" type="number" step="0.01" placeholder="Cost Price" required />
+          <button type="submit">Record Purchase</button>
+        </form>
+        <div id="purchasesTable" class="table-wrap"></div>
+      </section>
+
+      <section id="sales" class="panel">
+        <h2>Sales</h2>
+        <form id="saleForm" class="form-grid two-col">
+          <input name="customer_id" type="number" placeholder="Customer ID" required />
+          <select name="payment_type">
+            <option value="full">Full</option>
+            <option value="advance">Advance</option>
+            <option value="credit" selected>Credit</option>
+          </select>
+          <input name="paid_amount" type="number" step="0.01" value="0" placeholder="Paid Now" />
+          <input name="product_id" type="number" placeholder="Product ID" required />
+          <input name="quantity" type="number" placeholder="Quantity" required />
+          <input name="unit_price" type="number" step="0.01" placeholder="Selling Price" required />
+          <button type="submit">Create Sale</button>
+        </form>
+        <div id="salesTable" class="table-wrap"></div>
+      </section>
+
+      <section id="inventory" class="panel">
+        <h2>Inventory</h2>
+        <div id="inventorySummary" class="mini-cards"></div>
+        <div id="inventoryTable" class="table-wrap"></div>
+      </section>
+
+      <section id="daybook" class="panel">
+        <h2>Daybook</h2>
+        <div id="daybookTable" class="table-wrap"></div>
+      </section>
+
+      <div id="toast" class="toast"></div>
+    </main>
   </div>
-  {% if user %}
-  <script>
-    const labels = [
-      ["todays_sales", "Today's Sales"],
-      ["monthly_sales", "Monthly Sales"],
-      ["outstanding_customer_balances", "Customer Outstanding"],
-      ["stock_value", "Stock Value"],
-      ["cash_received_today", "Cash In Today"],
-      ["cash_paid_today", "Cash Out Today"],
-      ["low_stock_alerts", "Low Stock Alerts"],
-    ];
-    fetch('/dashboard').then(r=>r.json()).then(d=>{
-      const root = document.getElementById('kpis');
-      labels.forEach(([k,t])=>{
-        const div = document.createElement('div');
-        div.className='kpi';
-        const val = typeof d[k] === 'number' ? d[k].toLocaleString() : d[k];
-        div.innerHTML = `<div class="muted">${t}</div><div class="v">${val ?? 0}</div>`;
-        root.appendChild(div);
-      });
-    });
-  </script>
-  {% endif %}
+
+  <script src="/static/js/desk.js"></script>
 </body>
 </html>
