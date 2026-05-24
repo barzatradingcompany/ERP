@@ -36,21 +36,33 @@
       <main class="p-4 lg:p-6">
         <section id="dashboard" class="space-y-4">
           <h1 class="text-[28px] font-bold leading-tight">Dashboard</h1>
+          <div class="flex justify-end">
+            <button id="openLowStockList" class="rounded-md border border-line bg-white px-3 py-2 text-sm font-medium text-ink transition-all duration-200 ease-in-out hover:bg-[#F3F4F6]">Low Stock Items</button>
+          </div>
           {% include 'components/dashboard_cards.html' %}
-          <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
-            <div class="xl:col-span-2 rounded-xl border border-line bg-card p-4 shadow-sm">
-              <h3 class="mb-3 text-[20px] font-semibold">Recent Transactions</h3>
-              <div id="recentTransactions" class="overflow-hidden rounded-md border border-line bg-white"></div>
-            </div>
-            <div class="rounded-xl border border-line bg-card p-4 shadow-sm">
-              <h3 class="mb-3 text-[20px] font-semibold">Quick Actions</h3>
-              <div class="grid grid-cols-1 gap-2 text-sm text-[#6B7280]">
-                <div>New Sale</div>
-                <div>Add Product</div>
-                <div>Add Customer</div>
-                <div>New Purchase</div>
-                <div>Receive Payment</div>
-              </div>
+          <div class="rounded-xl border border-line bg-card p-4 shadow-sm">
+            <h3 class="mb-3 text-[20px] font-semibold">Quick Actions</h3>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              <button class="rounded-lg border border-line bg-white p-4 text-left transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">
+                <div class="text-xl">🧾</div>
+                <div class="mt-2 text-sm font-semibold text-ink">New Sale</div>
+              </button>
+              <button class="rounded-lg border border-line bg-white p-4 text-left transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">
+                <div class="text-xl">📦</div>
+                <div class="mt-2 text-sm font-semibold text-ink">Add Product</div>
+              </button>
+              <button class="rounded-lg border border-line bg-white p-4 text-left transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">
+                <div class="text-xl">👥</div>
+                <div class="mt-2 text-sm font-semibold text-ink">Add Customer</div>
+              </button>
+              <button class="rounded-lg border border-line bg-white p-4 text-left transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">
+                <div class="text-xl">🏭</div>
+                <div class="mt-2 text-sm font-semibold text-ink">New Purchase</div>
+              </button>
+              <button class="rounded-lg border border-line bg-white p-4 text-left transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">
+                <div class="text-xl">💰</div>
+                <div class="mt-2 text-sm font-semibold text-ink">Receive Payment</div>
+              </button>
             </div>
           </div>
         </section>
@@ -59,6 +71,15 @@
   </div>
 
   {% include 'components/toast_component.html' %}
+  <div id="lowStockModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/30 p-4">
+    <div class="w-full max-w-lg rounded-xl border border-line bg-white p-4 shadow-xl">
+      <div class="mb-3 flex items-center justify-between">
+        <h3 class="text-lg font-semibold">Low Stock Items</h3>
+        <button id="closeLowStockList" class="rounded-md border border-line bg-white px-3 py-1 text-sm">Close</button>
+      </div>
+      <div id="lowStockListBody" class="overflow-hidden rounded-md border border-line bg-white"></div>
+    </div>
+  </div>
   <script src="/static/js/desk.js"></script>
 </body>
 </html>

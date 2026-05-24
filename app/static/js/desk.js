@@ -1,7 +1,7 @@
 const $ = (q) => document.querySelector(q);
-const locale = navigator.language || 'en-IN';
-const currency = locale.includes('en-IN') || locale.includes('hi') ? 'INR' : 'USD';
-const money = (n) => new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(Number(n || 0));
+const locale = 'en-IN';
+const money = (n) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n || 0));
+let lowStockItems = [];
 
 function toast(message) {
   const el = $('#appToast');
@@ -36,7 +36,6 @@ async function loadDashboard() {
     { k: 'Stock Value', v: d.stock_value, t: 'normal', currency: true },
     { k: 'Cash In Today', v: d.cash_received_today, t: 'good', currency: true },
     { k: 'Cash Out Today', v: d.cash_paid_today, t: 'warning', currency: true },
-    { k: 'Low Stock', v: d.low_stock_alerts, t: d.low_stock_alerts > 0 ? 'danger' : 'normal', currency: false },
   ];
 
   const tone = (t) => t === 'good'
@@ -54,16 +53,36 @@ async function loadDashboard() {
     </div>
   `).join('');
 
-  const tx = await api('/transactions/recent');
-  renderSimpleTable('recentTransactions', [
-    { key: 'type', label: 'Type' },
-    { key: 'customer', label: 'Customer' },
-    { key: 'amount', label: 'Amount', render: (r) => money(r.amount) },
-    { key: 'date', label: 'Date', render: (r) => new Date(r.date).toLocaleString(locale) },
-  ], tx);
+  const inv = await api('/inventory');
+  lowStockItems = inv.items.filter((x) => Number(x.stock_qty) < Number(x.low_stock_limit));
+}
+
+function renderLowStockList() {
+  const body = $('#lowStockListBody');
+  if (!body) return;
+  if (!lowStockItems.length) {
+    body.innerHTML = `<div class="p-3 text-sm text-[#6B7280]">No low stock items.</div>`;
+    return;
+  }
+  renderSimpleTable('lowStockListBody', [
+    { key: 'name', label: 'Item' },
+    { key: 'stock_qty', label: 'In Stock' },
+    { key: 'low_stock_limit', label: 'Minimum Level' },
+  ], lowStockItems);
 }
 
 loadDashboard().catch((e) => {
   console.error(e);
   toast('Dashboard failed to load');
+});
+
+$('#openLowStockList')?.addEventListener('click', () => {
+  renderLowStockList();
+  $('#lowStockModal')?.classList.remove('hidden');
+  $('#lowStockModal')?.classList.add('flex');
+});
+
+$('#closeLowStockList')?.addEventListener('click', () => {
+  $('#lowStockModal')?.classList.add('hidden');
+  $('#lowStockModal')?.classList.remove('flex');
 });
