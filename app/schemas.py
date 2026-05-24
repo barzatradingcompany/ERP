@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -22,6 +22,18 @@ class SupplierCreate(BaseModel):
 
 class ProductCreate(BaseModel):
     name: str
+    category: str = ""
+    size: str = ""
+    thickness: str = ""
+    purchase_cost: float
+    selling_price: float
+    stock_qty: int = 0
+    low_stock_limit: int = 5
+
+
+class ProductUpdate(BaseModel):
+    name: str
+    category: str = ""
     size: str = ""
     thickness: str = ""
     purchase_cost: float
@@ -44,6 +56,7 @@ class PurchaseItemIn(BaseModel):
 
 class PurchaseCreate(BaseModel):
     supplier_id: int
+    purchase_date: date | None = None
     items: list[PurchaseItemIn]
 
 
@@ -56,6 +69,7 @@ class SaleItemIn(BaseModel):
 class SaleCreate(BaseModel):
     customer_id: int
     payment_type: PaymentType
+    sale_date: date | None = None
     paid_amount: float = 0.0
     items: list[SaleItemIn]
 

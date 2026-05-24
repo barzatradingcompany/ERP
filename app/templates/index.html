@@ -11,10 +11,10 @@
     <aside class="sidebar">
       <div class="brand">ERP Desk</div>
       <nav class="nav">
-        <button class="nav-item active" data-panel="dashboard">Dashboard</button>
+        <button class="nav-item" data-panel="dashboard">Dashboard</button>
         <button class="nav-item" data-panel="customers">Customers</button>
         <button class="nav-item" data-panel="suppliers">Suppliers</button>
-        <button class="nav-item" data-panel="products">Products</button>
+        <button class="nav-item active" data-panel="products">Products</button>
         <button class="nav-item" data-panel="purchases">Purchases</button>
         <button class="nav-item" data-panel="sales">Sales</button>
         <button class="nav-item" data-panel="inventory">Inventory</button>
@@ -28,23 +28,17 @@
         <div class="user-pill">{{ user.name }} | {{ user.email }}</div>
       </header>
 
-      <section id="dashboard" class="panel active">
+      <section id="dashboard" class="panel">
         <h2>Dashboard</h2>
         <div id="kpiGrid" class="kpi-grid"></div>
       </section>
 
       <section id="customers" class="panel">
         <h2>Customers</h2>
-        <form id="customerForm" class="form-grid">
-          <select name="customer_type" required>
-            <option value="retail">Retail</option>
-            <option value="wholesale">Wholesale</option>
-          </select>
-          <input name="store_name" placeholder="Store Name" required />
-          <input name="phone" placeholder="Phone" />
-          <input name="address" placeholder="Address" />
-          <button type="submit">Add Customer</button>
-        </form>
+        <div class="toolbar">
+          <button id="openCustomerModal" type="button">+ Add Customer</button>
+          <input id="customerSearch" placeholder="Search" />
+        </div>
         <div id="customersTable" class="table-wrap"></div>
       </section>
 
@@ -59,53 +53,35 @@
         <div id="suppliersTable" class="table-wrap"></div>
       </section>
 
-      <section id="products" class="panel">
+      <section id="products" class="panel active">
         <h2>Products</h2>
-        <form id="productForm" class="form-grid two-col">
-          <input name="name" placeholder="Mattress Name" required />
-          <input name="size" placeholder="Size" required />
-          <input name="thickness" placeholder="Thickness" required />
-          <input name="purchase_cost" type="number" step="0.01" placeholder="Purchase Cost" required />
-          <input name="selling_price" type="number" step="0.01" placeholder="Selling Price" required />
-          <input name="low_stock_limit" type="number" value="5" placeholder="Low Stock Limit" />
-          <button type="submit">Add Product</button>
-        </form>
+        <div class="toolbar">
+          <button id="openProductModal" type="button">+ Add Product</button>
+          <input id="productSearch" placeholder="Search" />
+        </div>
         <div id="productsTable" class="table-wrap"></div>
       </section>
 
       <section id="purchases" class="panel">
         <h2>Purchases</h2>
-        <form id="purchaseForm" class="form-grid two-col">
-          <input name="supplier_id" type="number" placeholder="Supplier ID" required />
-          <input name="product_id" type="number" placeholder="Product ID" required />
-          <input name="quantity" type="number" placeholder="Quantity" required />
-          <input name="unit_cost" type="number" step="0.01" placeholder="Cost Price" required />
-          <button type="submit">Record Purchase</button>
-        </form>
+        <div class="toolbar">
+          <button id="openPurchaseModal" type="button">New Purchase</button>
+        </div>
         <div id="purchasesTable" class="table-wrap"></div>
       </section>
 
       <section id="sales" class="panel">
         <h2>Sales</h2>
-        <form id="saleForm" class="form-grid two-col">
-          <input name="customer_id" type="number" placeholder="Customer ID" required />
-          <select name="payment_type">
-            <option value="full">Full</option>
-            <option value="advance">Advance</option>
-            <option value="credit" selected>Credit</option>
-          </select>
-          <input name="paid_amount" type="number" step="0.01" value="0" placeholder="Paid Now" />
-          <input name="product_id" type="number" placeholder="Product ID" required />
-          <input name="quantity" type="number" placeholder="Quantity" required />
-          <input name="unit_price" type="number" step="0.01" placeholder="Selling Price" required />
-          <button type="submit">Create Sale</button>
-        </form>
+        <div class="toolbar">
+          <button id="openSaleModal" type="button">New Sale</button>
+        </div>
         <div id="salesTable" class="table-wrap"></div>
       </section>
 
       <section id="inventory" class="panel">
         <h2>Inventory</h2>
         <div id="inventorySummary" class="mini-cards"></div>
+        <div id="lowStockWarnings" class="warn-wrap"></div>
         <div id="inventoryTable" class="table-wrap"></div>
       </section>
 
@@ -116,6 +92,76 @@
 
       <div id="toast" class="toast"></div>
     </main>
+  </div>
+
+  <div id="productModal" class="modal hidden">
+    <div class="modal-card">
+      <h3 id="productModalTitle">Add Product</h3>
+      <form id="productForm" class="form-grid two-col">
+        <input name="name" placeholder="Product Name" required />
+        <input name="category" placeholder="Category" required />
+        <input name="size" placeholder="Size" required />
+        <input name="thickness" placeholder="Thickness" required />
+        <input name="purchase_cost" type="number" step="0.01" placeholder="Purchase Price" required />
+        <input name="selling_price" type="number" step="0.01" placeholder="Selling Price" required />
+        <input name="stock_qty" type="number" placeholder="Stock Quantity" value="0" required />
+        <button type="submit">Save</button>
+      </form>
+      <button id="closeProductModal" class="ghost" type="button">Close</button>
+    </div>
+  </div>
+
+  <div id="customerModal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Add Customer</h3>
+      <form id="customerForm" class="form-grid">
+        <input name="store_name" placeholder="Store Name" required />
+        <select name="customer_type" required>
+          <option value="retail">Retail</option>
+          <option value="wholesale">Wholesale</option>
+        </select>
+        <input name="phone" placeholder="Phone" />
+        <input name="address" placeholder="Address" />
+        <button type="submit">Save</button>
+      </form>
+      <button id="closeCustomerModal" class="ghost" type="button">Close</button>
+    </div>
+  </div>
+
+  <div id="purchaseModal" class="modal hidden">
+    <div class="modal-card">
+      <h3>New Purchase</h3>
+      <form id="purchaseForm" class="form-grid two-col">
+        <select name="supplier_id" id="purchaseSupplier" required></select>
+        <input name="purchase_date" type="date" id="purchaseDate" required />
+        <select name="product_id" id="purchaseProduct" required></select>
+        <input name="quantity" type="number" placeholder="Qty" required />
+        <input name="unit_cost" type="number" step="0.01" placeholder="Cost" required />
+        <button type="submit">Save</button>
+      </form>
+      <button id="closePurchaseModal" class="ghost" type="button">Close</button>
+    </div>
+  </div>
+
+  <div id="saleModal" class="modal hidden">
+    <div class="modal-card">
+      <h3>New Sale</h3>
+      <form id="saleForm" class="form-grid two-col">
+        <select name="customer_id" id="saleCustomer" required></select>
+        <select name="payment_type" required>
+          <option value="full">Full</option>
+          <option value="advance">Advance</option>
+          <option value="credit" selected>Credit</option>
+        </select>
+        <input name="sale_date" id="saleDate" type="date" required />
+        <input name="paid_amount" type="number" step="0.01" value="0" placeholder="Paid Now" />
+        <select name="product_id" id="saleProduct" required></select>
+        <input name="quantity" type="number" placeholder="Qty" required />
+        <input name="unit_price" type="number" step="0.01" placeholder="Price" required />
+        <button type="submit">Save</button>
+      </form>
+      <button id="closeSaleModal" class="ghost" type="button">Close</button>
+    </div>
   </div>
 
   <script src="/static/js/desk.js"></script>

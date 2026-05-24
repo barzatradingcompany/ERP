@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import func, select
@@ -84,7 +84,10 @@ def create_purchase(db: Session, payload: schemas.PurchaseCreate):
         raise HTTPException(status_code=404, detail="Supplier not found")
 
     total = sum(i.quantity * i.unit_cost for i in payload.items)
-    purchase = models.Purchase(supplier_id=payload.supplier_id, total_amount=total)
+    created_at = (
+        datetime.combine(payload.purchase_date, time.min) if payload.purchase_date else datetime.utcnow()
+    )
+    purchase = models.Purchase(supplier_id=payload.supplier_id, total_amount=total, created_at=created_at)
     db.add(purchase)
     db.flush()
 
@@ -129,12 +132,14 @@ def create_sale(db: Session, payload: schemas.SaleCreate):
         raise HTTPException(status_code=400, detail="Paid amount cannot exceed invoice total")
     due = total - paid
 
+    created_at = datetime.combine(payload.sale_date, time.min) if payload.sale_date else datetime.utcnow()
     sale = models.Sale(
         customer_id=payload.customer_id,
         payment_type=payload.payment_type,
         total_amount=total,
         paid_amount=paid,
         due_amount=due,
+        created_at=created_at,
     )
     db.add(sale)
     db.flush()
@@ -374,3 +379,57 @@ def daybook_list(db: Session, limit: int = 200):
         )
         for r in rows
     ]
+
+
+def daybook_feed(db: Session, limit: int = 200):
+    rows = db.execute(
+        select(models.DaybookEntry).order_by(models.DaybookEntry.created_at.desc()).limit(limit)
+    ).scalars().all()
+
+    def _line_for_entry(entry: models.DaybookEntry) -> str:
+        if entry.event_type == models.DaybookType.PURCHASE:
+            purchase = db.get(models.Purchase, entry.ref_id)
+            if not purchase:
+                return f"+₹{int(entry.purchase_amount)}"
+            item = db.execute(
+                select(models.PurchaseItem).where(models.PurchaseItem.purchase_id == purchase.id).limit(1)
+            ).scalar_one_or_none()
+            if not item:
+                return f"+₹{int(entry.purchase_amount)}"
+            product = db.get(models.Product, item.product_id)
+            name = product.name if product else "Product"
+            return f"+{item.quantity} {name}"
+
+        if entry.event_type == models.DaybookType.SALE:
+            sale = db.get(models.Sale, entry.ref_id)
+            if not sale:
+                return f"-₹{int(entry.sales_amount)}"
+            item = db.execute(
+                select(models.SaleItem).where(models.SaleItem.sale_id == sale.id).limit(1)
+            ).scalar_one_or_none()
+            if not item:
+                return f"-₹{int(entry.sales_amount)}"
+            product = db.get(models.Product, item.product_id)
+            name = product.name if product else "Product"
+            return f"-{item.quantity} {name}"
+
+        if entry.event_type == models.DaybookType.RECEIPT:
+            return f"+₹{int(entry.cash_in)}"
+
+        if entry.event_type == models.DaybookType.PAYMENT:
+            return f"-₹{int(entry.cash_out)}"
+
+        return entry.narration or "-"
+
+    grouped: dict[str, list[dict]] = {}
+    for r in rows:
+        day_key = r.created_at.strftime("%d %b")
+        grouped.setdefault(day_key, []).append(
+            {
+                "type": r.event_type.value.replace("_", " ").title(),
+                "line": _line_for_entry(r),
+                "created_at": r.created_at.isoformat(),
+            }
+        )
+
+    return [{"date": d, "entries": entries} for d, entries in grouped.items()]

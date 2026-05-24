@@ -61,6 +61,7 @@ class Product(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
+    category: Mapped[str] = mapped_column(String(100), default="")
     size: Mapped[str] = mapped_column(String(100), default="")
     thickness: Mapped[str] = mapped_column(String(100), default="")
     purchase_cost: Mapped[float] = mapped_column(Float, nullable=False)

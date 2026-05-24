@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select
+from sqlalchemy import or_, select, text
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -18,6 +18,19 @@ load_dotenv()
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="ERP V1", version="1.1.0")
+
+
+def _ensure_products_category_column():
+    with engine.begin() as conn:
+        if engine.dialect.name == "sqlite":
+            cols = [row[1] for row in conn.execute(text("PRAGMA table_info(products)")).fetchall()]
+            if "category" not in cols:
+                conn.execute(text("ALTER TABLE products ADD COLUMN category VARCHAR(100) DEFAULT ''"))
+        else:
+            conn.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT ''"))
+
+
+_ensure_products_category_column()
 
 session_secret = os.getenv("SESSION_SECRET", "change-this-session-secret")
 app.add_middleware(SessionMiddleware, secret_key=session_secret, same_site="lax", https_only=False)
@@ -91,8 +104,18 @@ def create_customer(payload: schemas.CustomerCreate, db: Session = Depends(get_d
 
 
 @app.get("/customers")
-def list_customers(db: Session = Depends(get_db), _=Depends(require_user)):
-    return db.execute(select(models.Customer).order_by(models.Customer.id.desc())).scalars().all()
+def list_customers(q: str | None = None, db: Session = Depends(get_db), _=Depends(require_user)):
+    stmt = select(models.Customer)
+    if q:
+        token = f"%{q.strip()}%"
+        stmt = stmt.where(
+            or_(
+                models.Customer.store_name.ilike(token),
+                models.Customer.phone.ilike(token),
+                models.Customer.customer_type.ilike(token),
+            )
+        )
+    return db.execute(stmt.order_by(models.Customer.id.desc())).scalars().all()
 
 
 @app.post("/suppliers")
@@ -111,8 +134,56 @@ def create_product(payload: schemas.ProductCreate, db: Session = Depends(get_db)
 
 
 @app.get("/products")
-def list_products(db: Session = Depends(get_db), _=Depends(require_user)):
-    return db.execute(select(models.Product).order_by(models.Product.id.desc())).scalars().all()
+def list_products(q: str | None = None, db: Session = Depends(get_db), _=Depends(require_user)):
+    stmt = select(models.Product)
+    if q:
+        token = f"%{q.strip()}%"
+        stmt = stmt.where(
+            or_(
+                models.Product.name.ilike(token),
+                models.Product.category.ilike(token),
+                models.Product.size.ilike(token),
+                models.Product.thickness.ilike(token),
+            )
+        )
+    return db.execute(stmt.order_by(models.Product.id.desc())).scalars().all()
+
+
+@app.put("/products/{product_id}")
+def update_product(product_id: int, payload: schemas.ProductUpdate, db: Session = Depends(get_db), _=Depends(require_user)):
+    row = db.get(models.Product, product_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Product not found")
+    data = payload.model_dump()
+    for k, v in data.items():
+        setattr(row, k, v)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+@app.get("/products/{product_id}")
+def get_product(product_id: int, db: Session = Depends(get_db), _=Depends(require_user)):
+    row = db.get(models.Product, product_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return row
+
+
+@app.delete("/products/{product_id}")
+def delete_product(product_id: int, db: Session = Depends(get_db), _=Depends(require_user)):
+    row = db.get(models.Product, product_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Product not found")
+    if row.stock_qty > 0:
+        raise HTTPException(status_code=400, detail="Cannot delete product with stock quantity > 0")
+    purchase_refs = db.execute(select(models.PurchaseItem.id).where(models.PurchaseItem.product_id == product_id)).first()
+    sale_refs = db.execute(select(models.SaleItem.id).where(models.SaleItem.product_id == product_id)).first()
+    if purchase_refs or sale_refs:
+        raise HTTPException(status_code=400, detail="Cannot delete product with transaction history")
+    db.delete(row)
+    db.commit()
+    return {"ok": True}
 
 
 @app.post("/purchases")
@@ -168,6 +239,11 @@ def inventory(db: Session = Depends(get_db), _=Depends(require_user)):
 @app.get("/daybook")
 def daybook(limit: int = 200, db: Session = Depends(get_db), _=Depends(require_user)):
     return operations.daybook_list(db, limit=limit)
+
+
+@app.get("/daybook/feed")
+def daybook_feed(limit: int = 200, db: Session = Depends(get_db), _=Depends(require_user)):
+    return operations.daybook_feed(db, limit=limit)
 
 
 @app.get("/dashboard")
