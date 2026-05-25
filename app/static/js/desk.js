@@ -5,6 +5,8 @@ const money = (n) => new Intl.NumberFormat(locale, { style: 'currency', currency
 let lowStockItems = [];
 let saleCustomers = [];
 let saleProducts = [];
+let purchaseSuppliers = [];
+let purchaseProducts = [];
 const systemDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
 function toast(message) {
@@ -71,6 +73,12 @@ function setActivePanel(name) {
     loadSalesPanel().catch((e) => {
       console.error(e);
       toast('Sales failed to load');
+    });
+  }
+  if (name === 'purchases') {
+    loadPurchasesPanel().catch((e) => {
+      console.error(e);
+      toast('Purchases failed to load');
     });
   }
 }
@@ -242,6 +250,102 @@ function resetSaleForm() {
   updateSaleTotal();
 }
 
+function purchaseProductOptions(selectedId = '') {
+  if (!purchaseProducts.length) return '<option value="">No products found</option>';
+  return [
+    '<option value="">Select product</option>',
+    ...purchaseProducts.map((p) => `<option value="${p.id}" ${String(p.id) === String(selectedId) ? 'selected' : ''}>${productLabel(p)}</option>`),
+  ].join('');
+}
+
+function addPurchaseItemRow(item = {}) {
+  const row = document.createElement('div');
+  row.className = 'purchase-item-row grid grid-cols-[minmax(0,1fr)_84px_112px_44px] gap-2 px-3 py-2';
+  row.innerHTML = `
+    <select required class="purchase-product h-10 min-w-0 rounded-md border border-line bg-white px-2 py-1 text-sm">${purchaseProductOptions(item.product_id)}</select>
+    <input required type="number" min="1" step="1" value="${item.quantity || 1}" class="purchase-qty h-10 min-w-0 rounded-md border border-line bg-white px-2 py-1 text-sm" />
+    <input required type="number" min="0.01" step="0.01" value="${item.unit_cost || ''}" class="purchase-cost h-10 min-w-0 rounded-md border border-line bg-white px-2 py-1 text-sm" />
+    <button type="button" class="remove-purchase-item h-10 rounded-md border border-line bg-white text-sm transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">x</button>
+  `;
+  $('#purchaseItems')?.appendChild(row);
+  row.querySelector('.purchase-product')?.addEventListener('change', (e) => {
+    const product = purchaseProducts.find((p) => String(p.id) === e.target.value);
+    if (product) row.querySelector('.purchase-cost').value = Number(product.purchase_cost || 0);
+    updatePurchaseTotal();
+  });
+  row.querySelector('.purchase-qty')?.addEventListener('input', updatePurchaseTotal);
+  row.querySelector('.purchase-cost')?.addEventListener('input', updatePurchaseTotal);
+  row.querySelector('.remove-purchase-item')?.addEventListener('click', () => {
+    row.remove();
+    if (!document.querySelectorAll('.purchase-item-row').length) addPurchaseItemRow();
+    updatePurchaseTotal();
+  });
+  updatePurchaseTotal();
+}
+
+function collectPurchaseItems() {
+  return [...document.querySelectorAll('.purchase-item-row')].map((row) => ({
+    product_id: Number(row.querySelector('.purchase-product')?.value),
+    quantity: Number(row.querySelector('.purchase-qty')?.value),
+    unit_cost: Number(row.querySelector('.purchase-cost')?.value),
+  })).filter((x) => x.product_id && x.quantity > 0 && x.unit_cost > 0);
+}
+
+function updatePurchaseTotal() {
+  const total = collectPurchaseItems().reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
+  const totalEl = $('#purchaseTotal');
+  if (totalEl) totalEl.textContent = money(total);
+}
+
+async function loadPurchaseLookups() {
+  const [suppliers, inventory] = await Promise.all([api('/suppliers'), api('/inventory')]);
+  purchaseSuppliers = suppliers;
+  purchaseProducts = inventory.items || [];
+
+  const supplierSelect = $('#purchaseSupplier');
+  if (supplierSelect) {
+    supplierSelect.innerHTML = purchaseSuppliers.length
+      ? ['<option value="">Select supplier</option>', ...purchaseSuppliers.map((s) => `<option value="${s.id}">${s.name}</option>`)].join('')
+      : '<option value="">No suppliers found</option>';
+  }
+
+  const rows = document.querySelectorAll('.purchase-item-row');
+  if (!rows.length) {
+    addPurchaseItemRow();
+  } else {
+    rows.forEach((row) => {
+      const select = row.querySelector('.purchase-product');
+      const selected = select?.value || '';
+      if (select) select.innerHTML = purchaseProductOptions(selected);
+    });
+  }
+}
+
+async function loadPurchasesList() {
+  const purchases = await api('/purchases');
+  renderSimpleTable('purchasesTable', [
+    { key: 'id', label: 'Purchase', render: (r) => `#${r.id}` },
+    { key: 'supplier_id', label: 'Supplier', render: (r) => {
+      const supplier = purchaseSuppliers.find((s) => Number(s.id) === Number(r.supplier_id));
+      return supplier ? supplier.name : `#${r.supplier_id}`;
+    } },
+    { key: 'total_amount', label: 'Total', render: (r) => money(r.total_amount) },
+  ], purchases.slice(0, 10));
+}
+
+async function loadPurchasesPanel() {
+  await loadPurchaseLookups();
+  await loadPurchasesList();
+  updatePurchaseTotal();
+}
+
+function resetPurchaseForm() {
+  $('#purchaseForm')?.reset();
+  $('#purchaseItems').innerHTML = '';
+  addPurchaseItemRow();
+  updatePurchaseTotal();
+}
+
 loadDashboard().catch((e) => {
   console.error(e);
   toast('Dashboard failed to load');
@@ -268,6 +372,7 @@ $('#currencySelect')?.addEventListener('change', async (e) => {
   localStorage.setItem('erp_currency', e.target.value);
   await loadDashboard();
   updateSaleTotal();
+  updatePurchaseTotal();
 });
 
 $('#refreshSales')?.addEventListener('click', () => {
@@ -308,6 +413,43 @@ $('#saleForm')?.addEventListener('submit', async (e) => {
   } catch (err) {
     console.error(err);
     toast(err.message || 'Sale failed');
+  }
+});
+
+$('#refreshPurchases')?.addEventListener('click', () => {
+  loadPurchasesPanel().catch((e) => {
+    console.error(e);
+    toast('Purchases failed to refresh');
+  });
+});
+
+$('#addPurchaseItem')?.addEventListener('click', () => addPurchaseItemRow());
+
+$('#purchaseForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const items = collectPurchaseItems();
+  if (!items.length) {
+    toast('Add at least one purchase item');
+    return;
+  }
+  const payload = {
+    supplier_id: Number($('#purchaseSupplier')?.value),
+    purchase_date: $('#purchaseDate')?.value || null,
+    items,
+  };
+  if (!payload.supplier_id) {
+    toast('Select a supplier');
+    return;
+  }
+
+  try {
+    await apiPost('/purchases', payload);
+    toast('Purchase saved');
+    resetPurchaseForm();
+    await Promise.all([loadDashboard(), loadPurchasesPanel()]);
+  } catch (err) {
+    console.error(err);
+    toast(err.message || 'Purchase failed');
   }
 });
 
