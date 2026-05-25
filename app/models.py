@@ -1,10 +1,14 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum as PyEnum
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+
+def utc_now():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class CustomerType(str, PyEnum):
@@ -71,13 +75,39 @@ class Product(Base):
     low_stock_limit: Mapped[int] = mapped_column(Integer, default=5)
 
 
+class Employee(Base):
+    __tablename__ = "employees"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    role: Mapped[str] = mapped_column(String(100), default="")
+    phone: Mapped[str] = mapped_column(String(30), default="")
+    address: Mapped[str] = mapped_column(Text, default="")
+    monthly_salary: Mapped[float] = mapped_column(Float, default=0.0)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
+
+
+class SalaryPayment(Base):
+    __tablename__ = "salary_payments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=False)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    payment_month: Mapped[str] = mapped_column(String(20), default="")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
+
+    employee = relationship("Employee")
+
+
 class Purchase(Base):
     __tablename__ = "purchases"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     supplier_id: Mapped[int] = mapped_column(ForeignKey("suppliers.id"), nullable=False)
     total_amount: Mapped[float] = mapped_column(Float, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
 
     supplier = relationship("Supplier")
     items = relationship("PurchaseItem", back_populates="purchase", cascade="all, delete-orphan")
@@ -105,7 +135,7 @@ class Sale(Base):
     total_amount: Mapped[float] = mapped_column(Float, nullable=False)
     paid_amount: Mapped[float] = mapped_column(Float, default=0.0)
     due_amount: Mapped[float] = mapped_column(Float, default=0.0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
 
     customer = relationship("Customer")
     items = relationship("SaleItem", back_populates="sale", cascade="all, delete-orphan")
@@ -131,7 +161,7 @@ class SalesReturn(Base):
     customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"), nullable=False)
     sale_id: Mapped[int | None] = mapped_column(ForeignKey("sales.id"), nullable=True)
     total_amount: Mapped[float] = mapped_column(Float, default=0.0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
 
     items = relationship("SalesReturnItem", back_populates="sales_return", cascade="all, delete-orphan")
 
@@ -155,7 +185,7 @@ class PurchaseReturn(Base):
     supplier_id: Mapped[int] = mapped_column(ForeignKey("suppliers.id"), nullable=False)
     purchase_id: Mapped[int | None] = mapped_column(ForeignKey("purchases.id"), nullable=True)
     total_amount: Mapped[float] = mapped_column(Float, default=0.0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
 
     items = relationship("PurchaseReturnItem", back_populates="purchase_return", cascade="all, delete-orphan")
 
@@ -180,7 +210,7 @@ class ReceiptVoucher(Base):
     sale_id: Mapped[int | None] = mapped_column(ForeignKey("sales.id"), nullable=True)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     notes: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
 
 
 class PaymentVoucher(Base):
@@ -191,7 +221,7 @@ class PaymentVoucher(Base):
     supplier_id: Mapped[int | None] = mapped_column(ForeignKey("suppliers.id"), nullable=True)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     notes: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
 
 
 class DaybookEntry(Base):
@@ -206,4 +236,4 @@ class DaybookEntry(Base):
     purchase_amount: Mapped[float] = mapped_column(Float, default=0.0)
     cash_in: Mapped[float] = mapped_column(Float, default=0.0)
     cash_out: Mapped[float] = mapped_column(Float, default=0.0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)

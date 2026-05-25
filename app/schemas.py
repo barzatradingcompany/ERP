@@ -7,41 +7,82 @@ from app.models import CustomerType, PaymentType, VoucherCategory
 
 class CustomerCreate(BaseModel):
     customer_type: CustomerType
-    store_name: str
+    store_name: str = Field(min_length=1)
     phone: str = ""
     address: str = ""
-    opening_balance: float = 0.0
+    opening_balance: float = Field(default=0.0, ge=0)
+
+
+class CustomerUpdate(BaseModel):
+    customer_type: CustomerType
+    store_name: str = Field(min_length=1)
+    phone: str = ""
+    address: str = ""
+    outstanding_balance: float = Field(default=0.0, ge=0)
 
 
 class SupplierCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1)
     phone: str = ""
     address: str = ""
-    opening_balance: float = 0.0
+    opening_balance: float = Field(default=0.0, ge=0)
+
+
+class SupplierUpdate(BaseModel):
+    name: str = Field(min_length=1)
+    phone: str = ""
+    address: str = ""
+    outstanding_balance: float = Field(default=0.0, ge=0)
 
 
 class ProductCreate(BaseModel):
     parent_id: int | None = None
-    name: str
+    name: str = Field(min_length=1)
     category: str = ""
     size: str = ""
     thickness: str = ""
-    purchase_cost: float
-    selling_price: float
-    stock_qty: int = 0
-    low_stock_limit: int = 5
+    purchase_cost: float = Field(ge=0)
+    selling_price: float = Field(ge=0)
+    stock_qty: int = Field(default=0, ge=0)
+    low_stock_limit: int = Field(default=5, ge=0)
 
 
 class ProductUpdate(BaseModel):
     parent_id: int | None = None
-    name: str
+    name: str = Field(min_length=1)
     category: str = ""
     size: str = ""
     thickness: str = ""
-    purchase_cost: float
-    selling_price: float
-    stock_qty: int = 0
-    low_stock_limit: int = 5
+    purchase_cost: float = Field(ge=0)
+    selling_price: float = Field(ge=0)
+    stock_qty: int = Field(default=0, ge=0)
+    low_stock_limit: int = Field(default=5, ge=0)
+
+
+class EmployeeCreate(BaseModel):
+    name: str = Field(min_length=1)
+    role: str = ""
+    phone: str = ""
+    address: str = ""
+    monthly_salary: float = Field(default=0.0, ge=0)
+    active: bool = True
+
+
+class EmployeeUpdate(BaseModel):
+    name: str = Field(min_length=1)
+    role: str = ""
+    phone: str = ""
+    address: str = ""
+    monthly_salary: float = Field(default=0.0, ge=0)
+    active: bool = True
+
+
+class SalaryPaymentCreate(BaseModel):
+    employee_id: int
+    amount: float = Field(gt=0)
+    payment_month: str = ""
+    payment_date: date | None = None
+    notes: str = ""
 
 
 class ProductQtyLine(BaseModel):
@@ -59,7 +100,7 @@ class PurchaseItemIn(BaseModel):
 class PurchaseCreate(BaseModel):
     supplier_id: int
     purchase_date: date | None = None
-    items: list[PurchaseItemIn]
+    items: list[PurchaseItemIn] = Field(min_length=1)
 
 
 class SaleItemIn(BaseModel):
@@ -73,13 +114,13 @@ class SaleCreate(BaseModel):
     payment_type: PaymentType
     sale_date: date | None = None
     paid_amount: float = 0.0
-    items: list[SaleItemIn]
+    items: list[SaleItemIn] = Field(min_length=1)
 
 
 class SalesReturnCreate(BaseModel):
     customer_id: int
     sale_id: int | None = None
-    items: list[SaleItemIn]
+    items: list[SaleItemIn] = Field(min_length=1)
 
 
 class PurchaseReturnItemIn(BaseModel):
@@ -91,7 +132,7 @@ class PurchaseReturnItemIn(BaseModel):
 class PurchaseReturnCreate(BaseModel):
     supplier_id: int
     purchase_id: int | None = None
-    items: list[PurchaseReturnItemIn]
+    items: list[PurchaseReturnItemIn] = Field(min_length=1)
 
 
 class ReceiptVoucherCreate(BaseModel):

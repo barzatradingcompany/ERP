@@ -36,7 +36,8 @@ def _ensure_products_category_column():
 _ensure_products_category_column()
 
 session_secret = os.getenv("SESSION_SECRET", "change-this-session-secret")
-app.add_middleware(SessionMiddleware, secret_key=session_secret, same_site="lax", https_only=False)
+session_cookie_secure = os.getenv("SESSION_COOKIE_SECURE", "false").lower() in {"1", "true", "yes", "on"}
+app.add_middleware(SessionMiddleware, secret_key=session_secret, same_site="lax", https_only=session_cookie_secure)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
@@ -121,14 +122,38 @@ def list_customers(q: str | None = None, db: Session = Depends(get_db), _=Depend
     return db.execute(stmt.order_by(models.Customer.id.desc())).scalars().all()
 
 
+@app.put("/customers/{customer_id}")
+def update_customer(
+    customer_id: int, payload: schemas.CustomerUpdate, db: Session = Depends(get_db), _=Depends(require_user)
+):
+    return operations.update_customer(db, customer_id, payload)
+
+
 @app.post("/suppliers")
 def create_supplier(payload: schemas.SupplierCreate, db: Session = Depends(get_db), _=Depends(require_user)):
     return operations.create_supplier(db, payload)
 
 
 @app.get("/suppliers")
-def list_suppliers(db: Session = Depends(get_db), _=Depends(require_user)):
-    return db.execute(select(models.Supplier).order_by(models.Supplier.id.desc())).scalars().all()
+def list_suppliers(q: str | None = None, db: Session = Depends(get_db), _=Depends(require_user)):
+    stmt = select(models.Supplier)
+    if q:
+        token = f"%{q.strip()}%"
+        stmt = stmt.where(
+            or_(
+                models.Supplier.name.ilike(token),
+                models.Supplier.phone.ilike(token),
+                models.Supplier.address.ilike(token),
+            )
+        )
+    return db.execute(stmt.order_by(models.Supplier.id.desc())).scalars().all()
+
+
+@app.put("/suppliers/{supplier_id}")
+def update_supplier(
+    supplier_id: int, payload: schemas.SupplierUpdate, db: Session = Depends(get_db), _=Depends(require_user)
+):
+    return operations.update_supplier(db, supplier_id, payload)
 
 
 @app.post("/products")
@@ -157,6 +182,10 @@ def update_product(product_id: int, payload: schemas.ProductUpdate, db: Session 
     row = db.get(models.Product, product_id)
     if not row:
         raise HTTPException(status_code=404, detail="Product not found")
+    if payload.parent_id == product_id:
+        raise HTTPException(status_code=400, detail="Product cannot be its own parent")
+    if payload.parent_id is not None and not db.get(models.Product, payload.parent_id):
+        raise HTTPException(status_code=404, detail="Parent product not found")
     data = payload.model_dump()
     for k, v in data.items():
         setattr(row, k, v)
@@ -171,6 +200,60 @@ def get_product(product_id: int, db: Session = Depends(get_db), _=Depends(requir
     if not row:
         raise HTTPException(status_code=404, detail="Product not found")
     return row
+
+
+@app.post("/employees")
+def create_employee(payload: schemas.EmployeeCreate, db: Session = Depends(get_db), _=Depends(require_user)):
+    return operations.create_employee(db, payload)
+
+
+@app.get("/employees")
+def list_employees(q: str | None = None, db: Session = Depends(get_db), _=Depends(require_user)):
+    stmt = select(models.Employee)
+    if q:
+        token = f"%{q.strip()}%"
+        stmt = stmt.where(
+            or_(
+                models.Employee.name.ilike(token),
+                models.Employee.role.ilike(token),
+                models.Employee.phone.ilike(token),
+            )
+        )
+    return db.execute(stmt.order_by(models.Employee.active.desc(), models.Employee.name.asc())).scalars().all()
+
+
+@app.put("/employees/{employee_id}")
+def update_employee(
+    employee_id: int, payload: schemas.EmployeeUpdate, db: Session = Depends(get_db), _=Depends(require_user)
+):
+    return operations.update_employee(db, employee_id, payload)
+
+
+@app.delete("/employees/{employee_id}")
+def delete_employee(employee_id: int, db: Session = Depends(get_db), _=Depends(require_user)):
+    row = db.get(models.Employee, employee_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    row.active = False
+    db.commit()
+    return {"ok": True}
+
+
+@app.get("/payroll/summary")
+def payroll_summary(db: Session = Depends(get_db), _=Depends(require_user)):
+    return operations.payroll_summary(db)
+
+
+@app.post("/payroll/payments")
+def create_salary_payment(
+    payload: schemas.SalaryPaymentCreate, db: Session = Depends(get_db), _=Depends(require_user)
+):
+    return operations.create_salary_payment(db, payload)
+
+
+@app.get("/payroll/payments")
+def list_salary_payments(limit: int = 50, db: Session = Depends(get_db), _=Depends(require_user)):
+    return operations.salary_payment_list(db, limit=limit)
 
 
 @app.delete("/products/{product_id}")

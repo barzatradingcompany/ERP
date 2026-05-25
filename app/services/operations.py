@@ -7,6 +7,10 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 
 
+def _utc_now():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 def _today_bounds_utc():
     now = datetime.now(timezone.utc)
     start = datetime(now.year, now.month, now.day, tzinfo=timezone.utc).replace(tzinfo=None)
@@ -57,6 +61,17 @@ def create_customer(db: Session, payload: schemas.CustomerCreate):
     return c
 
 
+def update_customer(db: Session, customer_id: int, payload: schemas.CustomerUpdate):
+    customer = db.get(models.Customer, customer_id)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    for key, value in payload.model_dump().items():
+        setattr(customer, key, value)
+    db.commit()
+    db.refresh(customer)
+    return customer
+
+
 def create_supplier(db: Session, payload: schemas.SupplierCreate):
     s = models.Supplier(
         name=payload.name,
@@ -68,6 +83,17 @@ def create_supplier(db: Session, payload: schemas.SupplierCreate):
     db.commit()
     db.refresh(s)
     return s
+
+
+def update_supplier(db: Session, supplier_id: int, payload: schemas.SupplierUpdate):
+    supplier = db.get(models.Supplier, supplier_id)
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    for key, value in payload.model_dump().items():
+        setattr(supplier, key, value)
+    db.commit()
+    db.refresh(supplier)
+    return supplier
 
 
 def create_product(db: Session, payload: schemas.ProductCreate):
@@ -82,6 +108,95 @@ def create_product(db: Session, payload: schemas.ProductCreate):
     return p
 
 
+def create_employee(db: Session, payload: schemas.EmployeeCreate):
+    employee = models.Employee(**payload.model_dump())
+    db.add(employee)
+    db.commit()
+    db.refresh(employee)
+    return employee
+
+
+def update_employee(db: Session, employee_id: int, payload: schemas.EmployeeUpdate):
+    employee = db.get(models.Employee, employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    for key, value in payload.model_dump().items():
+        setattr(employee, key, value)
+    db.commit()
+    db.refresh(employee)
+    return employee
+
+
+def create_salary_payment(db: Session, payload: schemas.SalaryPaymentCreate):
+    employee = db.get(models.Employee, payload.employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    if not employee.active:
+        raise HTTPException(status_code=400, detail="Cannot pay salary to an inactive employee")
+
+    created_at = datetime.combine(payload.payment_date, time.min) if payload.payment_date else _utc_now()
+    payment_month = payload.payment_month.strip() or created_at.strftime("%Y-%m")
+    payment = models.SalaryPayment(
+        employee_id=employee.id,
+        amount=payload.amount,
+        payment_month=payment_month,
+        notes=payload.notes,
+        created_at=created_at,
+    )
+    db.add(payment)
+    db.flush()
+    add_daybook(
+        db,
+        models.DaybookType.PAYMENT,
+        "salary_payments",
+        payment.id,
+        f"Salary paid to {employee.name} for {payment_month}",
+        cash_out=payload.amount,
+    )
+    db.commit()
+    db.refresh(payment)
+    return payment
+
+
+def salary_payment_list(db: Session, limit: int = 50):
+    rows = db.execute(
+        select(models.SalaryPayment).order_by(models.SalaryPayment.created_at.desc()).limit(limit)
+    ).scalars().all()
+    data = []
+    for row in rows:
+        employee = db.get(models.Employee, row.employee_id)
+        data.append(
+            {
+                "id": row.id,
+                "employee_id": row.employee_id,
+                "employee_name": employee.name if employee else "-",
+                "amount": row.amount,
+                "payment_month": row.payment_month,
+                "notes": row.notes,
+                "created_at": row.created_at,
+            }
+        )
+    return data
+
+
+def payroll_summary(db: Session):
+    start_month = _month_start_utc()
+    active_employees = db.scalar(select(func.count(models.Employee.id)).where(models.Employee.active.is_(True)))
+    monthly_salary_total = db.scalar(
+        select(func.coalesce(func.sum(models.Employee.monthly_salary), 0.0)).where(models.Employee.active.is_(True))
+    )
+    paid_this_month = db.scalar(
+        select(func.coalesce(func.sum(models.SalaryPayment.amount), 0.0)).where(
+            models.SalaryPayment.created_at >= start_month
+        )
+    )
+    return {
+        "active_employees": active_employees or 0,
+        "monthly_salary_total": monthly_salary_total or 0.0,
+        "paid_this_month": paid_this_month or 0.0,
+    }
+
+
 def create_purchase(db: Session, payload: schemas.PurchaseCreate):
     supplier = db.get(models.Supplier, payload.supplier_id)
     if not supplier:
@@ -89,7 +204,7 @@ def create_purchase(db: Session, payload: schemas.PurchaseCreate):
 
     total = sum(i.quantity * i.unit_cost for i in payload.items)
     created_at = (
-        datetime.combine(payload.purchase_date, time.min) if payload.purchase_date else datetime.utcnow()
+        datetime.combine(payload.purchase_date, time.min) if payload.purchase_date else _utc_now()
     )
     purchase = models.Purchase(supplier_id=payload.supplier_id, total_amount=total, created_at=created_at)
     db.add(purchase)
@@ -136,7 +251,7 @@ def create_sale(db: Session, payload: schemas.SaleCreate):
         raise HTTPException(status_code=400, detail="Paid amount cannot exceed invoice total")
     due = total - paid
 
-    created_at = datetime.combine(payload.sale_date, time.min) if payload.sale_date else datetime.utcnow()
+    created_at = datetime.combine(payload.sale_date, time.min) if payload.sale_date else _utc_now()
     sale = models.Sale(
         customer_id=payload.customer_id,
         payment_type=payload.payment_type,
@@ -270,14 +385,23 @@ def create_receipt_voucher(db: Session, payload: schemas.ReceiptVoucherCreate):
     customer = db.get(models.Customer, payload.customer_id)
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
+    sale = None
+    if payload.sale_id:
+        sale = db.get(models.Sale, payload.sale_id)
+        if not sale:
+            raise HTTPException(status_code=404, detail="Sale not found")
+        if sale.customer_id != payload.customer_id:
+            raise HTTPException(status_code=400, detail="Sale does not belong to this customer")
+        remaining_due = max(0.0, sale.total_amount - sale.paid_amount)
+        if payload.amount > remaining_due:
+            raise HTTPException(status_code=400, detail="Receipt amount cannot exceed sale due amount")
+
     rv = models.ReceiptVoucher(**payload.model_dump())
     db.add(rv)
     db.flush()
-    if payload.sale_id:
-        sale = db.get(models.Sale, payload.sale_id)
-        if sale:
-            sale.paid_amount += payload.amount
-            sale.due_amount = max(0.0, sale.total_amount - sale.paid_amount)
+    if sale:
+        sale.paid_amount += payload.amount
+        sale.due_amount = max(0.0, sale.total_amount - sale.paid_amount)
     customer.outstanding_balance = max(0.0, customer.outstanding_balance - payload.amount)
     add_daybook(
         db,

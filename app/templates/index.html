@@ -47,11 +47,11 @@
                 <div class="text-3xl">🧾</div>
                 <div class="mt-3 text-base font-semibold text-ink">New Sale</div>
               </button>
-              <button class="rounded-xl border border-line bg-white p-6 text-left transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">
+              <button data-open-panel="products" class="rounded-xl border border-line bg-white p-6 text-left transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">
                 <div class="text-3xl">📦</div>
                 <div class="mt-3 text-base font-semibold text-ink">Add Product</div>
               </button>
-              <button class="rounded-xl border border-line bg-white p-6 text-left transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">
+              <button data-open-panel="customers" class="rounded-xl border border-line bg-white p-6 text-left transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">
                 <div class="text-3xl">👥</div>
                 <div class="mt-3 text-base font-semibold text-ink">Add Customer</div>
               </button>
@@ -66,6 +66,188 @@
             </div>
           </div>
         </section>
+        <section id="customers" class="panel hidden space-y-4">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 class="text-[28px] font-bold leading-tight">Customers</h2>
+            <div class="flex gap-2">
+              <input id="customerSearch" class="h-10 w-full rounded-md border border-line bg-white px-3 py-2 text-sm sm:w-72" placeholder="Search customers" />
+              <button id="refreshCustomers" class="h-10 rounded-md border border-line bg-white px-3 py-2 text-sm font-medium transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">Refresh</button>
+            </div>
+          </div>
+
+          <div id="customerSummary" class="grid gap-3" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"></div>
+
+          <div class="grid grid-cols-1 gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
+            <form id="customerForm" class="rounded-xl border border-line bg-card p-4 shadow-sm">
+              <input id="customerId" type="hidden" />
+              <h3 id="customerFormTitle" class="mb-4 text-[20px] font-semibold">Customer</h3>
+              <div class="space-y-3">
+                <label class="block space-y-1 text-sm font-medium">
+                  <span>Type</span>
+                  <select id="customerType" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm">
+                    <option value="retail">Retail</option>
+                    <option value="wholesale">Wholesale</option>
+                  </select>
+                </label>
+                <label class="block space-y-1 text-sm font-medium">
+                  <span>Store / Customer Name</span>
+                  <input id="customerName" required class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                </label>
+                <label class="block space-y-1 text-sm font-medium">
+                  <span>Phone</span>
+                  <input id="customerPhone" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                </label>
+                <label class="block space-y-1 text-sm font-medium">
+                  <span>Outstanding Balance</span>
+                  <input id="customerBalance" type="number" min="0" step="0.01" value="0" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                </label>
+                <label class="block space-y-1 text-sm font-medium">
+                  <span>Address</span>
+                  <textarea id="customerAddress" rows="3" class="w-full rounded-md border border-line bg-white px-3 py-2 text-sm"></textarea>
+                </label>
+              </div>
+              <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <button id="cancelCustomerEdit" type="button" class="hidden h-11 rounded-md border border-line bg-white px-4 py-2 text-sm font-medium transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">Cancel</button>
+                <button type="submit" class="h-11 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-all duration-200 ease-in-out hover:opacity-90">Save Customer</button>
+              </div>
+            </form>
+
+            <div class="rounded-xl border border-line bg-card p-4 shadow-sm">
+              <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h3 class="text-[20px] font-semibold">Customer List</h3>
+                  <p class="text-sm text-[#6B7280]">Balances shown here feed sales and receipt workflows.</p>
+                </div>
+              </div>
+              <div id="customersTable" class="overflow-hidden rounded-md border border-line bg-white"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="suppliers" class="panel hidden space-y-4">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 class="text-[28px] font-bold leading-tight">Suppliers</h2>
+            <div class="flex gap-2">
+              <input id="supplierSearch" class="h-10 w-full rounded-md border border-line bg-white px-3 py-2 text-sm sm:w-72" placeholder="Search suppliers" />
+              <button id="refreshSuppliers" class="h-10 rounded-md border border-line bg-white px-3 py-2 text-sm font-medium transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">Refresh</button>
+            </div>
+          </div>
+
+          <div id="supplierSummary" class="grid gap-3" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"></div>
+
+          <div class="grid grid-cols-1 gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
+            <form id="supplierForm" class="rounded-xl border border-line bg-card p-4 shadow-sm">
+              <input id="supplierId" type="hidden" />
+              <h3 id="supplierFormTitle" class="mb-4 text-[20px] font-semibold">Supplier</h3>
+              <div class="space-y-3">
+                <label class="block space-y-1 text-sm font-medium">
+                  <span>Name</span>
+                  <input id="supplierName" required class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                </label>
+                <label class="block space-y-1 text-sm font-medium">
+                  <span>Phone</span>
+                  <input id="supplierPhone" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                </label>
+                <label class="block space-y-1 text-sm font-medium">
+                  <span>Outstanding Balance</span>
+                  <input id="supplierBalance" type="number" min="0" step="0.01" value="0" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                </label>
+                <label class="block space-y-1 text-sm font-medium">
+                  <span>Address</span>
+                  <textarea id="supplierAddress" rows="3" class="w-full rounded-md border border-line bg-white px-3 py-2 text-sm"></textarea>
+                </label>
+              </div>
+              <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <button id="cancelSupplierEdit" type="button" class="hidden h-11 rounded-md border border-line bg-white px-4 py-2 text-sm font-medium transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">Cancel</button>
+                <button type="submit" class="h-11 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-all duration-200 ease-in-out hover:opacity-90">Save Supplier</button>
+              </div>
+            </form>
+
+            <div class="rounded-xl border border-line bg-card p-4 shadow-sm">
+              <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h3 class="text-[20px] font-semibold">Supplier List</h3>
+                  <p class="text-sm text-[#6B7280]">Supplier balances feed purchases and payment vouchers.</p>
+                </div>
+              </div>
+              <div id="suppliersTable" class="overflow-hidden rounded-md border border-line bg-white"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="products" class="panel hidden space-y-4">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 class="text-[28px] font-bold leading-tight">Products</h2>
+            <div class="flex gap-2">
+              <input id="productSearch" class="h-10 w-full rounded-md border border-line bg-white px-3 py-2 text-sm sm:w-72" placeholder="Search products" />
+              <button id="refreshProducts" class="h-10 rounded-md border border-line bg-white px-3 py-2 text-sm font-medium transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">Refresh</button>
+            </div>
+          </div>
+
+          <div id="productSummary" class="grid gap-3" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"></div>
+
+          <div class="grid grid-cols-1 gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
+            <form id="productForm" class="rounded-xl border border-line bg-card p-4 shadow-sm">
+              <input id="productId" type="hidden" />
+              <h3 id="productFormTitle" class="mb-4 text-[20px] font-semibold">Product</h3>
+              <div class="space-y-3">
+                <label class="block space-y-1 text-sm font-medium">
+                  <span>Name</span>
+                  <input id="productName" required class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                </label>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label class="block space-y-1 text-sm font-medium">
+                    <span>Category</span>
+                    <input id="productCategory" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                  <label class="block space-y-1 text-sm font-medium">
+                    <span>Parent Product</span>
+                    <select id="productParent" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm"></select>
+                  </label>
+                  <label class="block space-y-1 text-sm font-medium">
+                    <span>Size</span>
+                    <input id="productSize" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                  <label class="block space-y-1 text-sm font-medium">
+                    <span>Thickness</span>
+                    <input id="productThickness" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                  <label class="block space-y-1 text-sm font-medium">
+                    <span>Purchase Cost</span>
+                    <input id="productCost" required type="number" min="0" step="0.01" value="0" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                  <label class="block space-y-1 text-sm font-medium">
+                    <span>Selling Price</span>
+                    <input id="productPrice" required type="number" min="0" step="0.01" value="0" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                  <label class="block space-y-1 text-sm font-medium">
+                    <span>Opening Stock</span>
+                    <input id="productStock" type="number" min="0" step="1" value="0" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                  <label class="block space-y-1 text-sm font-medium">
+                    <span>Low Stock Limit</span>
+                    <input id="productLowStock" type="number" min="0" step="1" value="5" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                </div>
+              </div>
+              <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <button id="cancelProductEdit" type="button" class="hidden h-11 rounded-md border border-line bg-white px-4 py-2 text-sm font-medium transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">Cancel</button>
+                <button type="submit" class="h-11 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-all duration-200 ease-in-out hover:opacity-90">Save Product</button>
+              </div>
+            </form>
+
+            <div class="rounded-xl border border-line bg-card p-4 shadow-sm">
+              <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h3 class="text-[20px] font-semibold">Product Catalog</h3>
+                  <p class="text-sm text-[#6B7280]">Stock levels update from purchase, sale, and return entries.</p>
+                </div>
+              </div>
+              <div id="productsTable" class="overflow-hidden rounded-md border border-line bg-white"></div>
+            </div>
+          </div>
+        </section>
+
         <section id="sales" class="panel hidden space-y-4">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h2 class="text-[28px] font-bold leading-tight">Sales</h2>
@@ -173,6 +355,90 @@
             <div class="rounded-xl border border-line bg-card p-4 shadow-sm">
               <h3 class="mb-3 text-[20px] font-semibold">Recent Purchases</h3>
               <div id="purchasesTable" class="overflow-hidden rounded-md border border-line bg-white"></div>
+            </div>
+          </div>
+        </section>
+        <section id="payroll" class="panel hidden space-y-4">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 class="text-[28px] font-bold leading-tight">Payroll</h2>
+            <button id="refreshPayroll" class="h-10 rounded-md border border-line bg-white px-3 py-2 text-sm font-medium transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">Refresh</button>
+          </div>
+
+          <div id="payrollSummary" class="grid gap-3" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"></div>
+
+          <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+            <div class="space-y-4">
+              <form id="employeeForm" class="rounded-xl border border-line bg-card p-4 shadow-sm">
+                <input id="employeeId" type="hidden" />
+                <h3 id="employeeFormTitle" class="mb-4 text-[20px] font-semibold">Employee</h3>
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label class="space-y-1 text-sm font-medium">
+                    <span>Name</span>
+                    <input id="employeeName" required class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                  <label class="space-y-1 text-sm font-medium">
+                    <span>Role</span>
+                    <input id="employeeRole" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                  <label class="space-y-1 text-sm font-medium">
+                    <span>Phone</span>
+                    <input id="employeePhone" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                  <label class="space-y-1 text-sm font-medium">
+                    <span>Monthly Salary</span>
+                    <input id="employeeSalary" type="number" min="0" step="0.01" value="0" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                </div>
+                <label class="mt-3 block space-y-1 text-sm font-medium">
+                  <span>Address</span>
+                  <textarea id="employeeAddress" rows="2" class="w-full rounded-md border border-line bg-white px-3 py-2 text-sm"></textarea>
+                </label>
+                <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  <button id="cancelEmployeeEdit" type="button" class="hidden h-11 rounded-md border border-line bg-white px-4 py-2 text-sm font-medium transition-all duration-200 ease-in-out hover:bg-[#F9FAFB]">Cancel</button>
+                  <button type="submit" class="h-11 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-all duration-200 ease-in-out hover:opacity-90">Save Employee</button>
+                </div>
+              </form>
+
+              <div class="rounded-xl border border-line bg-card p-4 shadow-sm">
+                <h3 class="mb-3 text-[20px] font-semibold">Employees</h3>
+                <div id="employeesTable" class="overflow-hidden rounded-md border border-line bg-white"></div>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <form id="salaryPaymentForm" class="rounded-xl border border-line bg-card p-4 shadow-sm">
+                <h3 class="mb-4 text-[20px] font-semibold">Salary Payment</h3>
+                <div class="space-y-3">
+                  <label class="block space-y-1 text-sm font-medium">
+                    <span>Employee</span>
+                    <select id="salaryEmployee" required class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm"></select>
+                  </label>
+                  <label class="block space-y-1 text-sm font-medium">
+                    <span>Month</span>
+                    <input id="salaryMonth" type="month" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                  <label class="block space-y-1 text-sm font-medium">
+                    <span>Payment Date</span>
+                    <input id="salaryPaymentDate" type="date" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                  <label class="block space-y-1 text-sm font-medium">
+                    <span>Amount</span>
+                    <input id="salaryAmount" required type="number" min="0.01" step="0.01" class="h-11 w-full rounded-md border border-line bg-white px-3 py-2 text-sm" />
+                  </label>
+                  <label class="block space-y-1 text-sm font-medium">
+                    <span>Notes</span>
+                    <textarea id="salaryNotes" rows="2" class="w-full rounded-md border border-line bg-white px-3 py-2 text-sm"></textarea>
+                  </label>
+                </div>
+                <div class="mt-3 flex justify-end">
+                  <button type="submit" class="h-11 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-all duration-200 ease-in-out hover:opacity-90">Record Payment</button>
+                </div>
+              </form>
+
+              <div class="rounded-xl border border-line bg-card p-4 shadow-sm">
+                <h3 class="mb-3 text-[20px] font-semibold">Recent Salary Payments</h3>
+                <div id="salaryPaymentsTable" class="overflow-hidden rounded-md border border-line bg-white"></div>
+              </div>
             </div>
           </div>
         </section>
